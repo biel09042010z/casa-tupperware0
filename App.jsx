@@ -1083,19 +1083,20 @@ function ContaPage({ goTo }) {
 
 /* ============================= PÁGINA: LOGIN ADMIN ============================= */
 
-const ADMIN_PASSWORD = "09042010";
-
 function AdminLogin({ onSuccess, goTo }) {
+  const [email, setEmail] = useState("");
   const [pwd, setPwd] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const tryLogin = () => {
-    if (pwd.trim() === ADMIN_PASSWORD) {
-      setError("");
-      onSuccess();
-    } else {
-      setError("Senha incorreta.");
-    }
+  const tryLogin = async () => {
+    if (!email.trim() || !pwd.trim()) { setError("Preencha e-mail e senha."); return; }
+    setLoading(true);
+    setError("");
+    const { error: authError } = await supabase.auth.signInWithPassword({ email: email.trim(), password: pwd });
+    setLoading(false);
+    if (authError) { setError("E-mail ou senha incorretos."); return; }
+    onSuccess();
   };
 
   return (
@@ -1103,18 +1104,28 @@ function AdminLogin({ onSuccess, goTo }) {
       <div className="admin-login-card">
         <div className="admin-login-icon"><Lock className="w-6 h-6" /></div>
         <h1 className="page-title" style={{ marginBottom: "0.35rem" }}>Área restrita</h1>
-        <p className="txt-muted" style={{ marginBottom: "1.25rem" }}>Digite a senha para acessar o painel administrativo.</p>
+        <p className="txt-muted" style={{ marginBottom: "1.25rem" }}>Digite suas credenciais de administrador.</p>
         <div className="admin-login-form">
+          <input
+            type="email"
+            placeholder="E-mail"
+            value={email}
+            onChange={(e) => { setEmail(e.target.value); setError(""); }}
+            onKeyDown={(e) => { if (e.key === "Enter") tryLogin(); }}
+            autoFocus
+          />
           <input
             type="password"
             placeholder="Senha"
             value={pwd}
             onChange={(e) => { setPwd(e.target.value); setError(""); }}
             onKeyDown={(e) => { if (e.key === "Enter") tryLogin(); }}
-            autoFocus
+            style={{ marginTop: "0.5rem" }}
           />
           {error && <span className="coupon-err">{error}</span>}
-          <button type="button" className="btn btn-primary" style={{ width: "100%" }} onClick={tryLogin}>Entrar</button>
+          <button type="button" className="btn btn-primary" style={{ width: "100%" }} onClick={tryLogin} disabled={loading}>
+            {loading ? "Entrando…" : "Entrar"}
+          </button>
         </div>
         <button className="link-more" onClick={() => goTo("home")} style={{ marginTop: "1rem" }}>Voltar à loja</button>
       </div>
@@ -1647,6 +1658,16 @@ export default function App() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isAdminAuth, setIsAdminAuth] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAdminAuth(!!session);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAdminAuth(!!session);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
   const [categoryImages, setCategoryImages] = useState({});
   const [heroImages, setHeroImages] = useState({});
   const [howToImages, setHowToImages] = useState({});
@@ -1785,7 +1806,7 @@ export default function App() {
         {page === "conta" && <ContaPage goTo={goTo} />}
         {page === "admin" && (
           isAdminAuth
-            ? <AdminPage products={products} setProducts={setProducts} categoryImages={categoryImages} setCategoryImages={setCategoryImages} heroImages={heroImages} setHeroImages={setHeroImages} howToImages={howToImages} setHowToImages={setHowToImages} coupons={coupons} setCoupons={setCoupons} orders={orders} setOrders={setOrders} onSaveAll={saveAllChanges} isSaving={isSaving} onLogout={() => { setIsAdminAuth(false); goTo("home"); }} />
+            ? <AdminPage products={products} setProducts={setProducts} categoryImages={categoryImages} setCategoryImages={setCategoryImages} heroImages={heroImages} setHeroImages={setHeroImages} howToImages={howToImages} setHowToImages={setHowToImages} coupons={coupons} setCoupons={setCoupons} orders={orders} setOrders={setOrders} onSaveAll={saveAllChanges} isSaving={isSaving} onLogout={async () => { await supabase.auth.signOut(); setIsAdminAuth(false); goTo("home"); }} />
             : <AdminLogin onSuccess={() => setIsAdminAuth(true)} goTo={goTo} />
         )}
       </main>
