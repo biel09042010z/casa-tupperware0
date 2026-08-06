@@ -106,7 +106,10 @@ async function saveAllToSupabase({ products, categoryImages, heroImages, howToIm
 
   // banners do topo
   const heroRows = BANNERS.filter((b) => heroImages[b.id]).map((b) => ({ banner_id: b.id, url: heroImages[b.id] }));
-  if (heroRows.length) await supabase.from("app_hero_images").upsert(heroRows);
+  if (heroRows.length) {
+    const { error: heroError } = await supabase.from("app_hero_images").upsert(heroRows);
+    if (heroError) alert("Erro nos Banners: " + heroError.message);
+  }
   const heroToRemove = BANNERS.filter((b) => !heroImages[b.id]).map((b) => b.id);
   if (heroToRemove.length) await supabase.from("app_hero_images").delete().in("banner_id", heroToRemove);
 
@@ -134,12 +137,17 @@ async function saveAllToSupabase({ products, categoryImages, heroImages, howToIm
   if (staleIds.length) await supabase.from("app_products").delete().in("id", staleIds);
 
   if (products.length) {
-    await supabase.from("app_products").upsert(products.map((p) => ({
+    const { error: upsertError } = await supabase.from("app_products").upsert(products.map((p) => ({
       id: p.id, name: p.name, category: p.category, price: p.price, old_price: p.oldPrice || null,
       stock: p.stock, last_stock: p.lastStock || null, badge: p.badge || null, rating: p.rating || 5,
       reviews: p.reviews || 0, images: p.images || [], video: p.video || null, desc: p.desc || "",
       features: p.features || [], capacity: p.capacity || "", material: p.material || "",
     })));
+    if (upsertError) {
+      console.error("[app_products upsert]", upsertError);
+      alert("Erro no Banco: " + upsertError.message);
+      throw new Error("Produtos: " + upsertError.message);
+    }
   }
 }
 
