@@ -35,10 +35,8 @@ async function uploadToSupabase(file, folder) {
   const publicUrl = data.publicUrl;
 
   const { error: dbError } = await supabase.from(SUPABASE_TABLE).insert({
-    nome: file.name,
+    name: file.name,
     url: publicUrl,
-    caminho: path,
-    tamanho: file.size,
   });
   if (dbError) console.error(`Upload feito, mas não foi possível registrar em "${SUPABASE_TABLE}":`, dbError.message);
 
@@ -54,7 +52,7 @@ async function deleteFromSupabaseByUrl(url) {
   const path = url.slice(idx + marker.length);
   try {
     await supabase.storage.from(SUPABASE_BUCKET).remove([path]);
-    await supabase.from(SUPABASE_TABLE).delete().eq("caminho", path);
+    await supabase.from(SUPABASE_TABLE).delete().eq("url", url);
   } catch (err) {
     console.error("Não foi possível excluir a mídia do Supabase:", err.message);
   }
@@ -1135,7 +1133,7 @@ function AdminLogin({ onSuccess, goTo }) {
 
 /* ============================= PÁGINA: ADMIN (DEMO) ============================= */
 
-function AdminPage({ products, setProducts, categoryImages, setCategoryImages, heroImages, setHeroImages, howToImages, setHowToImages, coupons, setCoupons, orders, setOrders, onSaveAll, isSaving, onLogout }) {
+function AdminPage({ products, setProducts, categoryImages, setCategoryImages, heroImages, setHeroImages, howToImages, setHowToImages, coupons, setCoupons, orders, setOrders, onSaveAll, isSaving, onLogout, galeriaImagens, setGaleriaImagens }) {
   const [tab, setTab] = useState("produtos");
   const [editing, setEditing] = useState(null);
   const emptyForm = { name: "", category: "potes", price: "", stock: "", images: [], video: null };
@@ -1376,6 +1374,7 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
         <button className={tab === "banners" ? "admin-tab-active" : ""} onClick={() => setTab("banners")}>Banners</button>
         <button className={tab === "pedidos" ? "admin-tab-active" : ""} onClick={() => setTab("pedidos")}>Pedidos</button>
         <button className={tab === "cupons" ? "admin-tab-active" : ""} onClick={() => setTab("cupons")}>Cupons</button>
+        <button className={tab === "galeria" ? "admin-tab-active" : ""} onClick={() => setTab("galeria")}>Galeria</button>
       </div>
 
       {tab === "produtos" && (
@@ -1625,6 +1624,17 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
         </div>
       )}
 
+      {tab === "galeria" && (
+        <GaleriaAdmin
+          imagens={galeriaImagens}
+          onUpload={(novas) => setGaleriaImagens((prev) => [...novas.map((n, i) => ({ id: Date.now() + i, ...n })), ...prev])}
+          onDelete={async (img) => {
+            await deleteFromSupabaseByUrl(img.url);
+            setGaleriaImagens((prev) => prev.filter((i) => i.id !== img.id));
+          }}
+        />
+      )}
+
       <div className="admin-save-bar">
         <span className="txt-muted admin-save-hint">
           {isSaving ? "Salvando fotos, produtos e cupons..." : "Lembre-se de salvar antes de sair."}
@@ -1647,6 +1657,74 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
 }
 
 /* ============================= APP ============================= */
+
+/* ============================= GALERIA PÚBLICA ============================= */
+
+function GaleriaPublica({ imagens }) {
+  if (!imagens.length) return null;
+  return (
+    <section style={{ padding: "2rem 1rem", maxWidth: "1200px", margin: "0 auto" }}>
+      <h2 style={{ marginBottom: "1.25rem", fontSize: "1.5rem", fontWeight: 700 }}>Galeria</h2>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "1rem" }}>
+        {imagens.map((img) => (
+          <div key={img.id} style={{ borderRadius: "0.5rem", overflow: "hidden", aspectRatio: "1", background: "#f3f4f6" }}>
+            <img src={img.url} alt={img.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} loading="lazy" />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ============================= GALERIA ADMIN ============================= */
+
+function GaleriaAdmin({ imagens, onDelete, onUpload }) {
+  const [uploading, setUploading] = useState(false);
+
+  const handleFiles = async (files) => {
+    setUploading(true);
+    try {
+      const novas = await Promise.all(
+        Array.from(files).map(async (f) => {
+          const url = await uploadToSupabase(f, "galeria");
+          return { name: f.name, url };
+        })
+      );
+      onUpload(novas);
+    } catch (err) {
+      console.error("Erro no upload:", err);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div style={{ marginTop: "1.5rem" }}>
+      <h3 style={{ fontWeight: 700, marginBottom: "0.75rem" }}>Galeria de imagens</h3>
+      <FileField onFiles={handleFiles} accept="image/*" multiple>
+        <button type="button" className="btn btn-primary" disabled={uploading} style={{ marginBottom: "1rem" }}>
+          {uploading ? "Enviando…" : "Adicionar imagens"}
+        </button>
+      </FileField>
+      {imagens.length === 0 && <p className="txt-muted">Nenhuma imagem na galeria ainda.</p>}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "0.75rem", marginTop: "0.75rem" }}>
+        {imagens.map((img) => (
+          <div key={img.id} style={{ position: "relative", borderRadius: "0.5rem", overflow: "hidden", aspectRatio: "1", background: "#f3f4f6" }}>
+            <img src={img.url} alt={img.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} loading="lazy" />
+            <button
+              type="button"
+              onClick={() => onDelete(img)}
+              style={{ position: "absolute", top: 4, right: 4, background: "rgba(0,0,0,0.6)", border: "none", borderRadius: "50%", width: 28, height: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+              aria-label="Deletar imagem"
+            >
+              <X style={{ width: 14, height: 14, color: "#fff" }} />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
   const [products, setProducts] = useState(RAW_PRODUCTS);
@@ -1676,6 +1754,13 @@ export default function App() {
   ]);
   const [orders, setOrders] = useState([]);
   const addOrder = (order) => setOrders((o) => [order, ...o]);
+
+  const [galeriaImagens, setGaleriaImagens] = useState([]);
+
+  useEffect(() => {
+    supabase.from("imagens").select("*").order("id", { ascending: false })
+      .then(({ data }) => { if (data) setGaleriaImagens(data); });
+  }, []);
 
   const [isSaving, setIsSaving] = useState(false);
   const [toast, setToast] = useState(null);
@@ -1768,6 +1853,7 @@ export default function App() {
             )}
             <Reveal><AboutSection /></Reveal>
             <Reveal><Newsletter /></Reveal>
+            <Reveal><GaleriaPublica imagens={galeriaImagens} /></Reveal>
           </>
         )}
 
@@ -1806,7 +1892,7 @@ export default function App() {
         {page === "conta" && <ContaPage goTo={goTo} />}
         {page === "admin" && (
           isAdminAuth
-            ? <AdminPage products={products} setProducts={setProducts} categoryImages={categoryImages} setCategoryImages={setCategoryImages} heroImages={heroImages} setHeroImages={setHeroImages} howToImages={howToImages} setHowToImages={setHowToImages} coupons={coupons} setCoupons={setCoupons} orders={orders} setOrders={setOrders} onSaveAll={saveAllChanges} isSaving={isSaving} onLogout={async () => { await supabase.auth.signOut(); setIsAdminAuth(false); goTo("home"); }} />
+            ? <AdminPage products={products} setProducts={setProducts} categoryImages={categoryImages} setCategoryImages={setCategoryImages} heroImages={heroImages} setHeroImages={setHeroImages} howToImages={howToImages} setHowToImages={setHowToImages} coupons={coupons} setCoupons={setCoupons} orders={orders} setOrders={setOrders} onSaveAll={saveAllChanges} isSaving={isSaving} galeriaImagens={galeriaImagens} setGaleriaImagens={setGaleriaImagens} onLogout={async () => { await supabase.auth.signOut(); setIsAdminAuth(false); goTo("home"); }} />
             : <AdminLogin onSuccess={() => setIsAdminAuth(true)} goTo={goTo} />
         )}
       </main>
