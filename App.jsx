@@ -1248,6 +1248,7 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
     try {
       const oldUrl = categoryImages[categoryId];
       const url = await uploadToSupabase(file, "categorias");
+      await supabase.from("app_category_images").upsert({ category_id: categoryId, url });
       setCategoryImages((imgs) => ({ ...imgs, [categoryId]: url }));
       if (oldUrl) deleteFromSupabaseByUrl(oldUrl);
     } catch (err) {
@@ -1259,6 +1260,7 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
   const removeCategoryImage = (categoryId) => {
     const url = categoryImages[categoryId];
     setCategoryImages((imgs) => { const n = { ...imgs }; delete n[categoryId]; return n; });
+    supabase.from("app_category_images").delete().eq("category_id", categoryId);
     deleteFromSupabaseByUrl(url);
   };
 
@@ -1276,6 +1278,7 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
     try {
       const oldUrl = heroImages[bannerId];
       const url = await uploadToSupabase(file, "banners");
+      await supabase.from("app_hero_images").upsert({ banner_id: bannerId, url });
       setHeroImages((imgs) => ({ ...imgs, [bannerId]: url }));
       if (oldUrl) deleteFromSupabaseByUrl(oldUrl);
     } catch (err) {
@@ -1287,6 +1290,7 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
   const removeHeroImage = (bannerId) => {
     const url = heroImages[bannerId];
     setHeroImages((imgs) => { const n = { ...imgs }; delete n[bannerId]; return n; });
+    supabase.from("app_hero_images").delete().eq("banner_id", bannerId);
     deleteFromSupabaseByUrl(url);
   };
 
@@ -1304,6 +1308,7 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
     try {
       const oldUrl = howToImages[cardId];
       const url = await uploadToSupabase(file, "como-comprar");
+      await supabase.from("app_howto_images").upsert({ card_id: cardId, url });
       setHowToImages((imgs) => ({ ...imgs, [cardId]: url }));
       if (oldUrl) deleteFromSupabaseByUrl(oldUrl);
     } catch (err) {
@@ -1315,6 +1320,7 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
   const removeHowToImage = (cardId) => {
     const url = howToImages[cardId];
     setHowToImages((imgs) => { const n = { ...imgs }; delete n[cardId]; return n; });
+    supabase.from("app_howto_images").delete().eq("card_id", cardId);
     deleteFromSupabaseByUrl(url);
   };
 
