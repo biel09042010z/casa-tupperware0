@@ -139,7 +139,6 @@ async function loadAllFromSupabase() {
   const categoryImages = {};
   const { data: catData } = await supabase.from("app_category_images").select("category_id, url");
   (catData || []).forEach((r) => { categoryImages[r.category_id] = r.url ? r.url.split("?")[0] : r.url; });
-  alert("Categorias carregadas: " + JSON.stringify(Object.keys(categoryImages)));
 
   const heroImages = {};
   const { data: heroData } = await supabase.from("app_hero_images").select("banner_id, url");
@@ -1873,7 +1872,7 @@ export default function App() {
           <>
             <HeroBanner goTo={goTo} heroImages={heroImages} />
             <Reveal><HowToBuy goTo={goTo} howToImages={howToImages} /></Reveal>
-            <Reveal><CategorySection goTo={goTo} setCategoryFilter={setCategoryFilter} categoryImages={categoryImages} hiddenCategories={hiddenCategories} /></Reveal>
+            <Reveal><CategorySection key={Object.keys(categoryImages).join(",")} goTo={goTo} setCategoryFilter={setCategoryFilter} categoryImages={categoryImages} hiddenCategories={hiddenCategories} /></Reveal>
             {products.length > 0 && (
               <>
                 {bestSellers.length > 0 && <Reveal><ProductRow title="Mais vendidos" products={bestSellers} goTo={goTo} addToCart={addToCart} viewProduct={viewProduct} carousel /></Reveal>}
