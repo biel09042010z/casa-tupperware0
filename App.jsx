@@ -61,15 +61,15 @@ async function deleteFromSupabaseByUrl(url) {
 /* ============================= DADOS ============================= */
 
 const CATEGORIES = [
-  { id: "potes", name: "Potes", icon: Package, tint: "t-forest" },
-  { id: "organizacao", name: "Organização", icon: LayoutGrid, tint: "t-gold" },
-  { id: "cozinha", name: "Cozinha", icon: UtensilsCrossed, tint: "t-brick" },
-  { id: "garrafas", name: "Garrafas", icon: GlassWater, tint: "t-forest" },
-  { id: "conservacao", name: "Conservação", icon: Snowflake, tint: "t-gold" },
-  { id: "servir", name: "Servir", icon: Coffee, tint: "t-brick" },
-  { id: "infantil", name: "Linha infantil", icon: Baby, tint: "t-forest" },
-  { id: "kits", name: "Kits Tupperware", icon: Gift, tint: "t-brick" },
-  { id: "ofertas", name: "Ofertas", icon: Percent, tint: "t-gold" },
+  { id: "potes", name: "Potes", icon: Package, tint: "t-forest", visible: true },
+  { id: "organizacao", name: "Organização", icon: LayoutGrid, tint: "t-gold", visible: true },
+  { id: "cozinha", name: "Cozinha", icon: UtensilsCrossed, tint: "t-brick", visible: true },
+  { id: "garrafas", name: "Garrafas", icon: GlassWater, tint: "t-forest", visible: true },
+  { id: "conservacao", name: "Conservação", icon: Snowflake, tint: "t-gold", visible: true },
+  { id: "servir", name: "Servir", icon: Coffee, tint: "t-brick", visible: true },
+  { id: "infantil", name: "Linha infantil", icon: Baby, tint: "t-forest", visible: true },
+  { id: "kits", name: "Kits Tupperware", icon: Gift, tint: "t-brick", visible: true },
+  { id: "ofertas", name: "Ofertas", icon: Percent, tint: "t-gold", visible: true },
 ];
 
 const SWATCHES = {
@@ -97,8 +97,11 @@ const formatPrice = (v) => `R$ ${v.toFixed(2).replace(".", ",")}`;
 // do Supabase — funciona tanto na prévia do Claude quanto no site publicado na Netlify,
 // e não tem limite de tamanho (diferente do antigo sistema baseado no navegador).
 
-async function saveAllToSupabase({ products, categoryImages, heroImages, howToImages, coupons }) {
+async function saveAllToSupabase({ products, categoryImages, heroImages, howToImages, coupons, hiddenCategories }) {
   // fotos de categoria, banners e cards — salvos imediatamente no upload, não reprocessar aqui
+
+  // configurações (categorias ocultas)
+  await supabase.from("app_settings").upsert({ key: "hidden_categories", value: JSON.stringify(hiddenCategories) }, { onConflict: "key" });
 
   // cupons
   const { data: existingCoupons } = await supabase.from("app_coupons").select("code");
@@ -145,6 +148,9 @@ async function loadAllFromSupabase() {
   const { data: howtoData } = await supabase.from("app_howto_images").select("card_id, url");
   (howtoData || []).forEach((r) => { howToImages[r.card_id] = r.url ? r.url.split("?")[0] : r.url; });
 
+  const { data: settingsData } = await supabase.from("app_settings").select("key, value").eq("key", "hidden_categories").maybeSingle();
+  const hiddenCategories = settingsData ? JSON.parse(settingsData.value || "[]") : [];
+
   const { data: couponsData } = await supabase.from("app_coupons").select("*");
   const coupons = couponsData && couponsData.length
     ? couponsData.map((c) => ({ code: c.code, discount: c.discount, validade: c.validade || "", active: c.active }))
@@ -160,7 +166,7 @@ async function loadAllFromSupabase() {
       }))
     : null;
 
-  return { products, categoryImages, heroImages, howToImages, coupons };
+  return { products, categoryImages, heroImages, howToImages, coupons, hiddenCategories };
 }
 
 /* ============================= COMPONENTES BASE ============================= */
@@ -461,12 +467,12 @@ function HowToBuy({ goTo, howToImages = {} }) {
   );
 }
 
-function CategorySection({ goTo, setCategoryFilter, categoryImages = {} }) {
+function CategorySection({ goTo, setCategoryFilter, categoryImages = {}, hiddenCategories = [] }) {
   return (
     <section className="section section-alt">
       <h2 className="section-title">Encontre o que você precisa</h2>
       <div className="category-grid">
-        {CATEGORIES.map((c) => {
+        {CATEGORIES.filter((c) => !hiddenCategories.includes(c.id)).map((c) => {
           const img = categoryImages[c.id];
           return (
             <button
@@ -1122,7 +1128,7 @@ function AdminLogin({ onSuccess, goTo }) {
 
 /* ============================= PÁGINA: ADMIN (DEMO) ============================= */
 
-function AdminPage({ products, setProducts, categoryImages, setCategoryImages, heroImages, setHeroImages, howToImages, setHowToImages, coupons, setCoupons, orders, setOrders, onSaveAll, isSaving, onLogout, galeriaImagens, setGaleriaImagens }) {
+function AdminPage({ products, setProducts, categoryImages, setCategoryImages, heroImages, setHeroImages, howToImages, setHowToImages, coupons, setCoupons, orders, setOrders, onSaveAll, isSaving, onLogout, galeriaImagens, setGaleriaImagens, hiddenCategories, setHiddenCategories }) {
   const [tab, setTab] = useState("produtos");
   const [editing, setEditing] = useState(null);
   const emptyForm = { name: "", category: "potes", price: "", stock: "", images: [], video: null };
@@ -1480,22 +1486,32 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
           <p className="txt-muted" style={{ marginBottom: "1rem" }}>Escolha uma foto de fundo para cada categoria. Elas aparecem nos quadrados da seção "Encontre o que você precisa".</p>
           {catImgError && <div className="coupon-err" style={{ marginBottom: "1rem" }}>{catImgError}</div>}
           <div className="admin-category-grid">
-            {CATEGORIES.filter((c) => c.id !== "ofertas").map((c) => (
-              <div key={c.id} className="admin-category-card">
-                <div className="admin-category-preview" style={categoryImages[c.id] ? { backgroundImage: `url(${categoryImages[c.id]})` } : undefined}>
-                  {!categoryImages[c.id] && <c.icon className="w-6 h-6" />}
+            {CATEGORIES.filter((c) => c.id !== "ofertas").map((c) => {
+              const isHidden = hiddenCategories.includes(c.id);
+              return (
+                <div key={c.id} className="admin-category-card" style={{ opacity: isHidden ? 0.5 : 1 }}>
+                  <div className="admin-category-preview" style={categoryImages[c.id] ? { backgroundImage: `url(${categoryImages[c.id]})` } : undefined}>
+                    {!categoryImages[c.id] && <c.icon className="w-6 h-6" />}
+                  </div>
+                  <span>{c.name}</span>
+                  <div className="admin-category-actions">
+                    <FileField accept="image/*" className="btn btn-outline btn-sm admin-upload-btn" onFiles={handleCategoryImage(c.id)}>
+                      <Package className="w-4 h-4" /> {categoryImages[c.id] ? "Trocar" : "Adicionar foto"}
+                    </FileField>
+                    {categoryImages[c.id] && (
+                      <button className="btn btn-outline btn-sm" onClick={() => removeCategoryImage(c.id)}>Remover</button>
+                    )}
+                    <button
+                      className="btn btn-outline btn-sm"
+                      style={{ color: isHidden ? "var(--brick)" : "var(--forest)" }}
+                      onClick={() => setHiddenCategories((prev) => isHidden ? prev.filter((id) => id !== c.id) : [...prev, c.id])}
+                    >
+                      {isHidden ? "Mostrar" : "Ocultar"}
+                    </button>
+                  </div>
                 </div>
-                <span>{c.name}</span>
-                <div className="admin-category-actions">
-                  <FileField accept="image/*" className="btn btn-outline btn-sm admin-upload-btn" onFiles={handleCategoryImage(c.id)}>
-                    <Package className="w-4 h-4" /> {categoryImages[c.id] ? "Trocar" : "Adicionar foto"}
-                  </FileField>
-                  {categoryImages[c.id] && (
-                    <button className="btn btn-outline btn-sm" onClick={() => removeCategoryImage(c.id)}>Remover</button>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -1757,6 +1773,7 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
   const [categoryImages, setCategoryImages] = useState({});
+  const [hiddenCategories, setHiddenCategories] = useState([]);
   const [heroImages, setHeroImages] = useState({});
   const [howToImages, setHowToImages] = useState({});
   const [coupons, setCoupons] = useState([
@@ -1786,6 +1803,7 @@ export default function App() {
         if (Object.keys(saved.heroImages).length) setHeroImages(saved.heroImages);
         if (Object.keys(saved.howToImages).length) setHowToImages(saved.howToImages);
         if (saved.coupons) setCoupons(saved.coupons);
+        if (saved.hiddenCategories && saved.hiddenCategories.length) setHiddenCategories(saved.hiddenCategories);
       })
       .catch(() => { /* sem dados salvos ainda, segue com o padrão */ })
       .finally(() => { if (!cancelled) setHasLoadedStorage(true); });
@@ -1795,7 +1813,7 @@ export default function App() {
   const saveAllChanges = async () => {
     setIsSaving(true);
     try {
-      await saveAllToSupabase({ products, categoryImages, heroImages, howToImages, coupons });
+      await saveAllToSupabase({ products, categoryImages, heroImages, howToImages, coupons, hiddenCategories });
       setToast({ type: "success", message: "Alterações salvas com sucesso!" });
     } catch (err) {
       alert("Erro ao salvar: " + (err.message || JSON.stringify(err)));
@@ -1854,7 +1872,7 @@ export default function App() {
           <>
             <HeroBanner goTo={goTo} heroImages={heroImages} />
             <Reveal><HowToBuy goTo={goTo} howToImages={howToImages} /></Reveal>
-            <Reveal><CategorySection goTo={goTo} setCategoryFilter={setCategoryFilter} categoryImages={categoryImages} /></Reveal>
+            <Reveal><CategorySection goTo={goTo} setCategoryFilter={setCategoryFilter} categoryImages={categoryImages} hiddenCategories={hiddenCategories} /></Reveal>
             {products.length > 0 && (
               <>
                 {bestSellers.length > 0 && <Reveal><ProductRow title="Mais vendidos" products={bestSellers} goTo={goTo} addToCart={addToCart} viewProduct={viewProduct} carousel /></Reveal>}
@@ -1875,7 +1893,7 @@ export default function App() {
         {page === "categorias" && (
           <div className="page-shell">
             <h1 className="page-title">Categorias</h1>
-            <CategorySection goTo={goTo} setCategoryFilter={setCategoryFilter} categoryImages={categoryImages} />
+            <CategorySection goTo={goTo} setCategoryFilter={setCategoryFilter} categoryImages={categoryImages} hiddenCategories={hiddenCategories} />
           </div>
         )}
 
@@ -1903,7 +1921,7 @@ export default function App() {
         {page === "conta" && <ContaPage goTo={goTo} />}
         {page === "admin" && (
           isAdminAuth
-            ? <AdminPage products={products} setProducts={setProducts} categoryImages={categoryImages} setCategoryImages={setCategoryImages} heroImages={heroImages} setHeroImages={setHeroImages} howToImages={howToImages} setHowToImages={setHowToImages} coupons={coupons} setCoupons={setCoupons} orders={orders} setOrders={setOrders} onSaveAll={saveAllChanges} isSaving={isSaving} galeriaImagens={galeriaImagens} setGaleriaImagens={setGaleriaImagens} onLogout={async () => { await supabase.auth.signOut(); setIsAdminAuth(false); goTo("home"); }} />
+            ? <AdminPage products={products} setProducts={setProducts} categoryImages={categoryImages} setCategoryImages={setCategoryImages} heroImages={heroImages} setHeroImages={setHeroImages} howToImages={howToImages} setHowToImages={setHowToImages} coupons={coupons} setCoupons={setCoupons} orders={orders} setOrders={setOrders} onSaveAll={saveAllChanges} isSaving={isSaving} galeriaImagens={galeriaImagens} setGaleriaImagens={setGaleriaImagens} hiddenCategories={hiddenCategories} setHiddenCategories={setHiddenCategories} onLogout={async () => { await supabase.auth.signOut(); setIsAdminAuth(false); goTo("home"); }} />
             : <AdminLogin onSuccess={() => setIsAdminAuth(true)} goTo={goTo} />
         )}
       </main>
