@@ -100,22 +100,31 @@ const formatPrice = (v) => `R$ ${v.toFixed(2).replace(".", ",")}`;
 async function saveAllToSupabase({ products, categoryImages, heroImages, howToImages, coupons }) {
   // fotos de categoria
   const catRows = CATEGORIES.filter((c) => categoryImages[c.id]).map((c) => ({ category_id: c.id, url: categoryImages[c.id] }));
-  if (catRows.length) await supabase.from("app_category_images").upsert(catRows, { onConflict: "category_id" });
+  for (const row of catRows) {
+    const { data: ex } = await supabase.from("app_category_images").select("id").eq("category_id", row.category_id).maybeSingle();
+    if (ex) await supabase.from("app_category_images").update({ url: row.url }).eq("category_id", row.category_id);
+    else await supabase.from("app_category_images").insert(row);
+  }
   const catToRemove = CATEGORIES.filter((c) => !categoryImages[c.id]).map((c) => c.id);
   if (catToRemove.length) await supabase.from("app_category_images").delete().in("category_id", catToRemove);
 
   // banners do topo
   const heroRows = BANNERS.filter((b) => heroImages[b.id]).map((b) => ({ banner_id: b.id, url: heroImages[b.id] }));
-  if (heroRows.length) {
-    const { error: heroError } = await supabase.from("app_hero_images").upsert(heroRows, { onConflict: "banner_id" });
-    if (heroError) alert("Erro nos Banners: " + heroError.message);
+  for (const row of heroRows) {
+    const { data: ex } = await supabase.from("app_hero_images").select("id").eq("banner_id", row.banner_id).maybeSingle();
+    if (ex) { const { error: heroError } = await supabase.from("app_hero_images").update({ url: row.url }).eq("banner_id", row.banner_id); if (heroError) alert("Erro nos Banners: " + heroError.message); }
+    else { const { error: heroError } = await supabase.from("app_hero_images").insert(row); if (heroError) alert("Erro nos Banners: " + heroError.message); }
   }
   const heroToRemove = BANNERS.filter((b) => !heroImages[b.id]).map((b) => b.id);
   if (heroToRemove.length) await supabase.from("app_hero_images").delete().in("banner_id", heroToRemove);
 
   // cards "como comprar"
   const howtoRows = HOWTO_CARDS.filter((c) => howToImages[c.id]).map((c) => ({ card_id: c.id, url: howToImages[c.id] }));
-  if (howtoRows.length) await supabase.from("app_howto_images").upsert(howtoRows, { onConflict: "card_id" });
+  for (const row of howtoRows) {
+    const { data: ex } = await supabase.from("app_howto_images").select("id").eq("card_id", row.card_id).maybeSingle();
+    if (ex) await supabase.from("app_howto_images").update({ url: row.url }).eq("card_id", row.card_id);
+    else await supabase.from("app_howto_images").insert(row);
+  }
   const howtoToRemove = HOWTO_CARDS.filter((c) => !howToImages[c.id]).map((c) => c.id);
   if (howtoToRemove.length) await supabase.from("app_howto_images").delete().in("card_id", howtoToRemove);
 
@@ -1256,7 +1265,12 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
     try {
       const oldUrl = categoryImages[categoryId];
       const url = await uploadToSupabase(file, "categorias");
-      await supabase.from("app_category_images").upsert({ category_id: categoryId, url }, { onConflict: "category_id" });
+      const { data: existing } = await supabase.from("app_category_images").select("id").eq("category_id", categoryId).maybeSingle();
+      if (existing) {
+        await supabase.from("app_category_images").update({ url }).eq("category_id", categoryId);
+      } else {
+        await supabase.from("app_category_images").insert({ category_id: categoryId, url });
+      }
       setCategoryImages((imgs) => ({ ...imgs, [categoryId]: url }));
       if (oldUrl) deleteFromSupabaseByUrl(oldUrl);
     } catch (err) {
@@ -1286,7 +1300,12 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
     try {
       const oldUrl = heroImages[bannerId];
       const url = await uploadToSupabase(file, "banners");
-      await supabase.from("app_hero_images").upsert({ banner_id: bannerId, url }, { onConflict: "banner_id" });
+      const { data: existing } = await supabase.from("app_hero_images").select("id").eq("banner_id", bannerId).maybeSingle();
+      if (existing) {
+        await supabase.from("app_hero_images").update({ url }).eq("banner_id", bannerId);
+      } else {
+        await supabase.from("app_hero_images").insert({ banner_id: bannerId, url });
+      }
       setHeroImages((imgs) => ({ ...imgs, [bannerId]: url }));
       if (oldUrl) deleteFromSupabaseByUrl(oldUrl);
     } catch (err) {
@@ -1316,7 +1335,12 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
     try {
       const oldUrl = howToImages[cardId];
       const url = await uploadToSupabase(file, "como-comprar");
-      await supabase.from("app_howto_images").upsert({ card_id: cardId, url }, { onConflict: "card_id" });
+      const { data: existing } = await supabase.from("app_howto_images").select("id").eq("card_id", cardId).maybeSingle();
+      if (existing) {
+        await supabase.from("app_howto_images").update({ url }).eq("card_id", cardId);
+      } else {
+        await supabase.from("app_howto_images").insert({ card_id: cardId, url });
+      }
       setHowToImages((imgs) => ({ ...imgs, [cardId]: url }));
       if (oldUrl) deleteFromSupabaseByUrl(oldUrl);
     } catch (err) {
