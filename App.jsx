@@ -1802,6 +1802,7 @@ export default function App() {
       await saveAllToSupabase({ products, categoryImages, heroImages, howToImages, coupons });
       setToast({ type: "success", message: "Alterações salvas com sucesso!" });
     } catch (err) {
+      alert("Erro ao salvar: " + (err.message || JSON.stringify(err)));
       setToast({ type: "error", message: "Não foi possível salvar. Tente novamente." });
     } finally {
       setIsSaving(false);
