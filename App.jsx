@@ -98,35 +98,7 @@ const formatPrice = (v) => `R$ ${v.toFixed(2).replace(".", ",")}`;
 // e não tem limite de tamanho (diferente do antigo sistema baseado no navegador).
 
 async function saveAllToSupabase({ products, categoryImages, heroImages, howToImages, coupons }) {
-  // fotos de categoria
-  const catRows = CATEGORIES.filter((c) => categoryImages[c.id]).map((c) => ({ category_id: c.id, url: categoryImages[c.id] }));
-  for (const row of catRows) {
-    const { data: ex } = await supabase.from("app_category_images").select("id").eq("category_id", row.category_id).maybeSingle();
-    if (ex) await supabase.from("app_category_images").update({ url: row.url }).eq("category_id", row.category_id);
-    else await supabase.from("app_category_images").insert(row);
-  }
-  const catToRemove = CATEGORIES.filter((c) => !categoryImages[c.id]).map((c) => c.id);
-  if (catToRemove.length) await supabase.from("app_category_images").delete().in("category_id", catToRemove);
-
-  // banners do topo
-  const heroRows = BANNERS.filter((b) => heroImages[b.id]).map((b) => ({ banner_id: b.id, url: heroImages[b.id] }));
-  for (const row of heroRows) {
-    const { data: ex } = await supabase.from("app_hero_images").select("id").eq("banner_id", row.banner_id).maybeSingle();
-    if (ex) { const { error: heroError } = await supabase.from("app_hero_images").update({ url: row.url }).eq("banner_id", row.banner_id); if (heroError) alert("Erro nos Banners: " + heroError.message); }
-    else { const { error: heroError } = await supabase.from("app_hero_images").insert(row); if (heroError) alert("Erro nos Banners: " + heroError.message); }
-  }
-  const heroToRemove = BANNERS.filter((b) => !heroImages[b.id]).map((b) => b.id);
-  if (heroToRemove.length) await supabase.from("app_hero_images").delete().in("banner_id", heroToRemove);
-
-  // cards "como comprar"
-  const howtoRows = HOWTO_CARDS.filter((c) => howToImages[c.id]).map((c) => ({ card_id: c.id, url: howToImages[c.id] }));
-  for (const row of howtoRows) {
-    const { data: ex } = await supabase.from("app_howto_images").select("id").eq("card_id", row.card_id).maybeSingle();
-    if (ex) await supabase.from("app_howto_images").update({ url: row.url }).eq("card_id", row.card_id);
-    else await supabase.from("app_howto_images").insert(row);
-  }
-  const howtoToRemove = HOWTO_CARDS.filter((c) => !howToImages[c.id]).map((c) => c.id);
-  if (howtoToRemove.length) await supabase.from("app_howto_images").delete().in("card_id", howtoToRemove);
+  // fotos de categoria, banners e cards — salvos imediatamente no upload, não reprocessar aqui
 
   // cupons
   const { data: existingCoupons } = await supabase.from("app_coupons").select("code");
