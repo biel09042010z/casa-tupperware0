@@ -1471,7 +1471,7 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
           <p className="txt-muted" style={{ marginBottom: "1rem" }}>Escolha uma foto de fundo para cada categoria. Elas aparecem nos quadrados da seção "Encontre o que você precisa".</p>
           {catImgError && <div className="coupon-err" style={{ marginBottom: "1rem" }}>{catImgError}</div>}
           <div className="admin-category-grid">
-            {CATEGORIES.filter((c) => c.id !== "ofertas").map((c) => {
+            {CATEGORIES.map((c) => {
               const isHidden = hiddenCategories.includes(c.id);
               return (
                 <div key={c.id} className="admin-category-card" style={{ opacity: isHidden ? 0.5 : 1 }}>
