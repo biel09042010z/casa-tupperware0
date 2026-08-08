@@ -154,15 +154,15 @@ async function saveAllToSupabase({ products, categoryImages, heroImages, howToIm
 async function loadAllFromSupabase() {
   const categoryImages = {};
   const { data: catData } = await supabase.from("app_category_images").select("category_id, url");
-  (catData || []).forEach((r) => { categoryImages[r.category_id] = r.url; });
+  (catData || []).forEach((r) => { categoryImages[r.category_id] = r.url ? r.url.split("?")[0] : r.url; });
 
   const heroImages = {};
   const { data: heroData } = await supabase.from("app_hero_images").select("banner_id, url");
-  (heroData || []).forEach((r) => { heroImages[r.banner_id] = r.url; });
+  (heroData || []).forEach((r) => { heroImages[r.banner_id] = r.url ? r.url.split("?")[0] : r.url; });
 
   const howToImages = {};
   const { data: howtoData } = await supabase.from("app_howto_images").select("card_id, url");
-  (howtoData || []).forEach((r) => { howToImages[r.card_id] = r.url; });
+  (howtoData || []).forEach((r) => { howToImages[r.card_id] = r.url ? r.url.split("?")[0] : r.url; });
 
   const { data: couponsData } = await supabase.from("app_coupons").select("*");
   const coupons = couponsData && couponsData.length
