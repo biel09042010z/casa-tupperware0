@@ -404,7 +404,7 @@ function HeroBanner({ goTo, heroImages = {} }) {
   const b = BANNERS[idx];
   const img = heroImages[b.id];
   return (
-    <section className={`hero hero-${b.tone} ${img ? "hero-photo" : ""}`} style={img ? { backgroundImage: `url(${img})` } : undefined}>
+    <section className={`hero hero-${b.tone} ${img ? "hero-photo" : ""}`} style={img ? { backgroundImage: `url(${img})`, backgroundSize: "cover", backgroundPosition: "center center", backgroundRepeat: "no-repeat" } : undefined}>
       {img && <div className="hero-scrim" />}
       <div className="hero-content" key={b.id}>
         <span className="eyebrow">{b.eyebrow}</span>
