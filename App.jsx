@@ -1242,14 +1242,9 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
     setUploadingCatId(categoryId);
     try {
       const url = await uploadToSupabase(file, "categorias");
-      const { data: existing } = await supabase.from("app_category_images").select("id").eq("category_id", categoryId).maybeSingle();
-      if (existing) {
-        const { error: saveErr } = await supabase.from("app_category_images").update({ url }).eq("category_id", categoryId);
-        if (saveErr) alert("Erro ao atualizar categoria: " + saveErr.message);
-      } else {
-        const { error: saveErr } = await supabase.from("app_category_images").insert({ category_id: categoryId, url });
-        if (saveErr) alert("Erro ao inserir categoria: " + saveErr.message);
-      }
+      await supabase.from("app_category_images").delete().eq("category_id", categoryId);
+      const { error: saveErr } = await supabase.from("app_category_images").insert({ category_id: categoryId, url });
+      if (saveErr) alert("Erro ao salvar categoria: " + saveErr.message);
       setCategoryImages((imgs) => ({ ...imgs, [categoryId]: url }));
     } catch (err) {
       setCatImgError("Não foi possível enviar a foto: " + err.message);
@@ -1277,14 +1272,9 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
     setUploadingHeroId(bannerId);
     try {
       const url = await uploadToSupabase(file, "banners");
-      const { data: existing } = await supabase.from("app_hero_images").select("id").eq("banner_id", bannerId).maybeSingle();
-      if (existing) {
-        const { error: saveErr } = await supabase.from("app_hero_images").update({ url }).eq("banner_id", bannerId);
-        if (saveErr) alert("Erro ao atualizar banner: " + saveErr.message);
-      } else {
-        const { error: saveErr } = await supabase.from("app_hero_images").insert({ banner_id: bannerId, url });
-        if (saveErr) alert("Erro ao inserir banner: " + saveErr.message);
-      }
+      await supabase.from("app_hero_images").delete().eq("banner_id", bannerId);
+      const { error: saveErr } = await supabase.from("app_hero_images").insert({ banner_id: bannerId, url });
+      if (saveErr) alert("Erro ao salvar banner: " + saveErr.message);
       setHeroImages((imgs) => ({ ...imgs, [bannerId]: url }));
     } catch (err) {
       setHeroImgError("Não foi possível enviar a foto: " + err.message);
@@ -1312,14 +1302,9 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
     setUploadingHowToId(cardId);
     try {
       const url = await uploadToSupabase(file, "como-comprar");
-      const { data: existing } = await supabase.from("app_howto_images").select("id").eq("card_id", cardId).maybeSingle();
-      if (existing) {
-        const { error: saveErr } = await supabase.from("app_howto_images").update({ url }).eq("card_id", cardId);
-        if (saveErr) alert("Erro ao atualizar card: " + saveErr.message);
-      } else {
-        const { error: saveErr } = await supabase.from("app_howto_images").insert({ card_id: cardId, url });
-        if (saveErr) alert("Erro ao inserir card: " + saveErr.message);
-      }
+      await supabase.from("app_howto_images").delete().eq("card_id", cardId);
+      const { error: saveErr } = await supabase.from("app_howto_images").insert({ card_id: cardId, url });
+      if (saveErr) alert("Erro ao salvar card: " + saveErr.message);
       setHowToImages((imgs) => ({ ...imgs, [cardId]: url }));
     } catch (err) {
       setHowToImgError("Não foi possível enviar a foto: " + err.message);
@@ -1872,7 +1857,7 @@ export default function App() {
           <>
             <HeroBanner goTo={goTo} heroImages={heroImages} />
             <Reveal><HowToBuy goTo={goTo} howToImages={howToImages} /></Reveal>
-            <Reveal><CategorySection key={Object.keys(categoryImages).join(",")} goTo={goTo} setCategoryFilter={setCategoryFilter} categoryImages={categoryImages} hiddenCategories={hiddenCategories} /></Reveal>
+            <CategorySection key={Object.keys(categoryImages).join(",")} goTo={goTo} setCategoryFilter={setCategoryFilter} categoryImages={categoryImages} hiddenCategories={hiddenCategories} />
             {products.length > 0 && (
               <>
                 {bestSellers.length > 0 && <Reveal><ProductRow title="Mais vendidos" products={bestSellers} goTo={goTo} addToCart={addToCart} viewProduct={viewProduct} carousel /></Reveal>}
