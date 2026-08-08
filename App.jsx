@@ -98,118 +98,251 @@ const formatPrice = (v) => `R$ ${v.toFixed(2).replace(".", ",")}`;
 // e não tem limite de tamanho (diferente do antigo sistema baseado no navegador).
 
 async function saveAllToSupabase({ products, categoryImages, heroImages, howToImages, coupons }) {
-  // fotos de categoria
-  const catRows = CATEGORIES.filter((c) => categoryImages[c.id]).map((c) => ({ category_id: c.id, url: categoryImages[c.id] }));
+  // Todas as leituras são verificadas antes de qualquer exclusão. Isso evita
+  // apagar dados do banco se uma consulta falhar por RLS/rede.
+  const check = (result, label) => {
+    if (result?.error) throw new Error(`${label}: ${result.error.message}`);
+    return result;
+  };
+
+  // Fotos de categoria
+  const catRows = CATEGORIES
+    .filter((c) => categoryImages[c.id])
+    .map((c) => ({ category_id: c.id, url: categoryImages[c.id] }));
+
   if (catRows.length) {
-    const { error: catError } = await supabase
-      .from("app_category_images")
-      .upsert(catRows, { onConflict: "category_id" });
-    if (catError) throw new Error("Categorias: " + catError.message);
+    check(await supabase.from("app_category_images").upsert(catRows), "Categorias");
   }
-  const catToRemove = CATEGORIES.filter((c) => !categoryImages[c.id]).map((c) => c.id);
-  if (catToRemove.length) await supabase.from("app_category_images").delete().in("category_id", catToRemove);
+  const catRead = check(
+    await supabase.from("app_category_images").select("category_id"),
+    "Leitura das categorias"
+  );
+  const catCurrentIds = new Set(catRows.map((r) => r.category_id));
+  const catToRemove = (catRead.data || [])
+    .map((r) => r.category_id)
+    .filter((id) => !catCurrentIds.has(id));
+  if (catToRemove.length) {
+    check(
+      await supabase.from("app_category_images").delete().in("category_id", catToRemove),
+      "Exclusão de categorias"
+    );
+  }
 
-  // banners do topo
-  const heroRows = BANNERS.filter((b) => heroImages[b.id]).map((b) => ({ banner_id: b.id, url: heroImages[b.id] }));
+  // Banners do topo
+  const heroRows = BANNERS
+    .filter((b) => heroImages[b.id])
+    .map((b) => ({ banner_id: b.id, url: heroImages[b.id] }));
+
   if (heroRows.length) {
-    const { error: heroError } = await supabase.from("app_hero_images").upsert(heroRows, { onConflict: "banner_id" });
-    if (heroError) alert("Erro nos Banners: " + heroError.message);
+    check(await supabase.from("app_hero_images").upsert(heroRows), "Banners");
   }
-  const heroToRemove = BANNERS.filter((b) => !heroImages[b.id]).map((b) => b.id);
-  if (heroToRemove.length) await supabase.from("app_hero_images").delete().in("banner_id", heroToRemove);
+  const heroRead = check(
+    await supabase.from("app_hero_images").select("banner_id"),
+    "Leitura dos banners"
+  );
+  const heroCurrentIds = new Set(heroRows.map((r) => r.banner_id));
+  const heroToRemove = (heroRead.data || [])
+    .map((r) => r.banner_id)
+    .filter((id) => !heroCurrentIds.has(id));
+  if (heroToRemove.length) {
+    check(
+      await supabase.from("app_hero_images").delete().in("banner_id", heroToRemove),
+      "Exclusão de banners"
+    );
+  }
 
-  // cards "como comprar"
-  const howtoRows = HOWTO_CARDS.filter((c) => howToImages[c.id]).map((c) => ({ card_id: c.id, url: howToImages[c.id] }));
+  // Cards "como comprar"
+  // A tabela app_howto_images possui apenas: id (int8), url e created_at.
+  // Usamos o id como um slot fixo (1 = primeiro card, 2 = segundo, etc.),
+  // mantendo a associação estável sem exigir uma nova coluna no Supabase.
+  const howtoRows = HOWTO_CARDS
+    .map((c, index) => ({ id: index + 1, url: howToImages[c.id] || null }))
+    .filter((r) => r.url);
+
   if (howtoRows.length) {
-    const { error: howtoError } = await supabase
-      .from("app_howto_images")
-      .upsert(howtoRows, { onConflict: "card_id" });
-    if (howtoError) throw new Error("Como comprar: " + howtoError.message);
+    check(
+      await supabase.from("app_howto_images").upsert(howtoRows, { onConflict: "id" }),
+      "Como comprar"
+    );
   }
-  const howtoToRemove = HOWTO_CARDS.filter((c) => !howToImages[c.id]).map((c) => c.id);
-  if (howtoToRemove.length) await supabase.from("app_howto_images").delete().in("card_id", howtoToRemove);
+  const howtoRead = check(
+    await supabase.from("app_howto_images").select("id"),
+    "Leitura das imagens de como comprar"
+  );
+  const howtoCurrentIds = new Set(howtoRows.map((r) => r.id));
+  const howtoToRemove = (howtoRead.data || [])
+    .map((r) => r.id)
+    .filter((id) => !howtoCurrentIds.has(id));
+  if (howtoToRemove.length) {
+    check(
+      await supabase.from("app_howto_images").delete().in("id", howtoToRemove),
+      "Exclusão de imagens de como comprar"
+    );
+  }
 
-  // cupons
-  const { data: existingCoupons } = await supabase.from("app_coupons").select("code");
+  // Cupons
+  const existingCoupons = check(
+    await supabase.from("app_coupons").select("code"),
+    "Leitura dos cupons"
+  );
   const currentCodes = coupons.map((c) => c.code);
-  const staleCodes = (existingCoupons || []).map((c) => c.code).filter((code) => !currentCodes.includes(code));
-  if (staleCodes.length) await supabase.from("app_coupons").delete().in("code", staleCodes);
+  const staleCodes = (existingCoupons.data || [])
+    .map((c) => c.code)
+    .filter((code) => !currentCodes.includes(code));
+
+  if (staleCodes.length) {
+    check(
+      await supabase.from("app_coupons").delete().in("code", staleCodes),
+      "Exclusão de cupons"
+    );
+  }
   if (coupons.length) {
-    await supabase.from("app_coupons").upsert(coupons.map((c) => ({
-      code: c.code, discount: c.discount, validade: c.validade || null, active: c.active !== false,
-    })));
+    check(
+      await supabase.from("app_coupons").upsert(coupons.map((c) => ({
+        code: c.code,
+        discount: c.discount,
+        validade: c.validade || null,
+        active: c.active !== false,
+      }))),
+      "Cupons"
+    );
   }
 
-  // produtos (remove os que não existem mais e grava/atualiza o resto)
-  const { data: existingProducts } = await supabase.from("app_products").select("id");
+  // Produtos
+  const existingProducts = check(
+    await supabase.from("app_products").select("id"),
+    "Leitura dos produtos"
+  );
   const currentIds = products.map((p) => p.id);
-  const staleIds = (existingProducts || []).map((p) => p.id).filter((id) => !currentIds.includes(id));
-  if (staleIds.length) await supabase.from("app_products").delete().in("id", staleIds);
+  const staleIds = (existingProducts.data || [])
+    .map((p) => p.id)
+    .filter((id) => !currentIds.includes(id));
+
+  if (staleIds.length) {
+    check(
+      await supabase.from("app_products").delete().in("id", staleIds),
+      "Exclusão de produtos"
+    );
+  }
 
   if (products.length) {
-    const { error: upsertError } = await supabase.from("app_products").upsert(products.map((p) => ({
-      id: p.id, name: p.name, category: p.category, price: p.price, old_price: p.oldPrice || null,
-      stock: p.stock, last_stock: p.lastStock || null, badge: p.badge || null, rating: p.rating || 5,
-      reviews: p.reviews || 0, images: p.images || [], video: p.video || null, desc: p.desc || "",
-      features: p.features || [], capacity: p.capacity || "", material: p.material || "",
-    })));
-    if (upsertError) {
-      console.error("[app_products upsert]", upsertError);
-      alert("Erro no Banco: " + upsertError.message);
-      throw new Error("Produtos: " + upsertError.message);
-    }
+    check(
+      await supabase.from("app_products").upsert(products.map((p) => ({
+        id: p.id,
+        name: p.name,
+        category: p.category,
+        price: p.price,
+        old_price: p.oldPrice || null,
+        stock: p.stock,
+        last_stock: p.lastStock || null,
+        badge: p.badge || null,
+        rating: p.rating || 5,
+        reviews: p.reviews || 0,
+        images: Array.isArray(p.images) ? p.images : [],
+        video: p.video || null,
+        desc: p.desc || "",
+        features: Array.isArray(p.features) ? p.features : [],
+        capacity: p.capacity || "",
+        material: p.material || "",
+      }))),
+      "Produtos"
+    );
   }
 }
-
 async function loadAllFromSupabase() {
+  // Importante: qualquer erro de consulta deve ser propagado.
+  // Antes, o código ignorava erros do Supabase e acabava parecendo que não
+  // havia imagens/produtos salvos, fazendo o estado inicial vazio substituir a tela.
+  const [
+    catResult,
+    heroResult,
+    howtoResult,
+    couponsResult,
+    productsResult,
+  ] = await Promise.all([
+    supabase.from("app_category_images").select("category_id, url"),
+    supabase.from("app_hero_images").select("banner_id, url"),
+    supabase.from("app_howto_images").select("id, url"),
+    supabase.from("app_coupons").select("*"),
+    supabase.from("app_products").select("*").order("id", { ascending: true }),
+  ]);
+
+  const results = [
+    ["app_category_images", catResult],
+    ["app_hero_images", heroResult],
+    ["app_howto_images", howtoResult],
+    ["app_coupons", couponsResult],
+    ["app_products", productsResult],
+  ];
+
+  const failed = results.find(([, result]) => result?.error);
+  if (failed) {
+    const [table, result] = failed;
+    throw new Error(`Não foi possível carregar ${table}: ${result.error.message}`);
+  }
+
+  const cleanUrl = (url) => {
+    if (!url) return url;
+    // Não remova parâmetros legítimos da URL. Eles podem ser usados por CDN/cache.
+    return String(url);
+  };
+
   const categoryImages = {};
-  const { data: catData, error: catError } = await supabase
-    .from("app_category_images")
-    .select("category_id, url");
-  if (catError) throw new Error("Categorias: " + catError.message);
-  (catData || []).forEach((r) => {
-    categoryImages[r.category_id] = r.url ? r.url.split("?")[0] : r.url;
+  (catResult.data || []).forEach((r) => {
+    if (r.category_id && r.url) categoryImages[r.category_id] = cleanUrl(r.url);
   });
 
   const heroImages = {};
-  const { data: heroData, error: heroError } = await supabase
-    .from("app_hero_images")
-    .select("banner_id, url");
-  if (heroError) throw new Error("Banners: " + heroError.message);
-  (heroData || []).forEach((r) => {
-    heroImages[r.banner_id] = r.url ? r.url.split("?")[0] : r.url;
+  (heroResult.data || []).forEach((r) => {
+    if (r.banner_id && r.url) heroImages[r.banner_id] = cleanUrl(r.url);
   });
 
   const howToImages = {};
-  const { data: howtoData, error: howtoError } = await supabase
-    .from("app_howto_images")
-    .select("card_id, url");
-  if (howtoError) throw new Error("Como comprar: " + howtoError.message);
-  (howtoData || []).forEach((r) => {
-    howToImages[r.card_id] = r.url ? r.url.split("?")[0] : r.url;
+  (howtoResult.data || []).forEach((r) => {
+    const card = HOWTO_CARDS[Number(r.id) - 1];
+    if (card && r.url) howToImages[card.id] = cleanUrl(r.url);
   });
 
-  const { data: couponsData, error: couponsError } = await supabase.from("app_coupons").select("*");
-  if (couponsError) throw new Error("Cupons: " + couponsError.message);
-  const coupons = couponsData && couponsData.length
-    ? couponsData.map((c) => ({ code: c.code, discount: c.discount, validade: c.validade || "", active: c.active }))
-    : null;
+  const coupons = (couponsResult.data || []).map((c) => ({
+    code: c.code,
+    discount: c.discount,
+    validade: c.validade || "",
+    active: c.active !== false,
+  }));
 
-  const { data: productsData, error: productsError } = await supabase
-    .from("app_products")
-    .select("*")
-    .order("id", { ascending: true });
-  if (productsError) throw new Error("Produtos: " + productsError.message);
-  const products = productsData && productsData.length
-    ? productsData.map((p) => ({
-        id: p.id, name: p.name, category: p.category, price: Number(p.price), oldPrice: p.old_price ? Number(p.old_price) : null,
-        stock: p.stock, lastStock: p.last_stock, badge: p.badge, rating: p.rating, reviews: p.reviews,
-        images: p.images || [], image: (p.images && p.images[0]) || null, video: p.video,
-        desc: p.desc, features: p.features || [], capacity: p.capacity, material: p.material,
-      }))
-    : null;
+  const products = (productsResult.data || []).map((p) => {
+    const images = Array.isArray(p.images) ? p.images.filter(Boolean) : [];
+    return {
+      id: p.id,
+      name: p.name,
+      category: p.category,
+      price: Number(p.price) || 0,
+      oldPrice: p.old_price != null ? Number(p.old_price) : null,
+      stock: Number(p.stock) || 0,
+      lastStock: p.last_stock != null ? Number(p.last_stock) : null,
+      badge: p.badge,
+      rating: Number(p.rating) || 5,
+      reviews: Number(p.reviews) || 0,
+      images,
+      image: images[0] || null,
+      video: p.video || null,
+      desc: p.desc || "",
+      features: Array.isArray(p.features) ? p.features : [],
+      capacity: p.capacity || "",
+      material: p.material || "",
+    };
+  });
 
-  return { products, categoryImages, heroImages, howToImages, coupons };
+  return {
+    // null significa "não havia dados". Um array vazio significa "o banco
+    // foi carregado e está realmente vazio". Isso evita sobrescrever dados
+    // durante o carregamento.
+    products: products.length ? products : null,
+    categoryImages,
+    heroImages,
+    howToImages,
+    coupons: coupons.length ? coupons : null,
+  };
 }
 
 /* ============================= COMPONENTES BASE ============================= */
@@ -1286,10 +1419,7 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
     try {
       const oldUrl = categoryImages[categoryId];
       const url = await uploadToSupabase(file, "categorias");
-      const { error: saveError } = await supabase
-        .from("app_category_images")
-        .upsert({ category_id: categoryId, url }, { onConflict: "category_id" });
-      if (saveError) throw saveError;
+      await supabase.from("app_category_images").upsert({ category_id: categoryId, url });
       setCategoryImages((imgs) => ({ ...imgs, [categoryId]: url }));
       if (oldUrl) deleteFromSupabaseByUrl(oldUrl);
     } catch (err) {
@@ -1319,10 +1449,7 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
     try {
       const oldUrl = heroImages[bannerId];
       const url = await uploadToSupabase(file, "banners");
-      const { error: saveError } = await supabase
-        .from("app_hero_images")
-        .upsert({ banner_id: bannerId, url }, { onConflict: "banner_id" });
-      if (saveError) throw saveError;
+      await supabase.from("app_hero_images").upsert({ banner_id: bannerId, url });
       setHeroImages((imgs) => ({ ...imgs, [bannerId]: url }));
       if (oldUrl) deleteFromSupabaseByUrl(oldUrl);
     } catch (err) {
@@ -1352,10 +1479,12 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
     try {
       const oldUrl = howToImages[cardId];
       const url = await uploadToSupabase(file, "como-comprar");
-      const { error: saveError } = await supabase
-        .from("app_howto_images")
-        .upsert({ card_id: cardId, url }, { onConflict: "card_id" });
-      if (saveError) throw saveError;
+      const cardIndex = HOWTO_CARDS.findIndex((c) => c.id === cardId);
+      if (cardIndex === -1) throw new Error("Card de como comprar não encontrado.");
+      await supabase.from("app_howto_images").upsert(
+        { id: cardIndex + 1, url },
+        { onConflict: "id" }
+      );
       setHowToImages((imgs) => ({ ...imgs, [cardId]: url }));
       if (oldUrl) deleteFromSupabaseByUrl(oldUrl);
     } catch (err) {
@@ -1367,7 +1496,10 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
   const removeHowToImage = (cardId) => {
     const url = howToImages[cardId];
     setHowToImages((imgs) => { const n = { ...imgs }; delete n[cardId]; return n; });
-    supabase.from("app_howto_images").delete().eq("card_id", cardId);
+    const cardIndex = HOWTO_CARDS.findIndex((c) => c.id === cardId);
+    if (cardIndex >= 0) {
+      supabase.from("app_howto_images").delete().eq("id", cardIndex + 1);
+    }
     deleteFromSupabaseByUrl(url);
   };
 
@@ -1692,7 +1824,7 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
         <span className="txt-muted admin-save-hint">
           {isSaving ? "Salvando fotos, produtos e cupons..." : "Lembre-se de salvar antes de sair."}
         </span>
-        <button type="button" className="btn btn-primary admin-save-btn" onClick={onSaveAll} disabled={isSaving || !hasLoadedStorage}>
+        <button type="button" className="btn btn-primary admin-save-btn" onClick={onSaveAll} disabled={isSaving}>
           {isSaving ? (
             <>
               <span className="spinner" /> Salvando...
@@ -1818,28 +1950,46 @@ export default function App() {
   const [isSaving, setIsSaving] = useState(false);
   const [toast, setToast] = useState(null);
   const [hasLoadedStorage, setHasLoadedStorage] = useState(false);
+  const [storageLoadError, setStorageLoadError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
-    loadAllFromSupabase()
-      .then((saved) => {
+
+    (async () => {
+      try {
+        const saved = await loadAllFromSupabase();
         if (cancelled) return;
+
+        // Só substituímos o estado depois que TODAS as consultas terminaram
+        // com sucesso. Assim, um erro de RLS/rede nunca transforma imagens
+        // salvas em "dados vazios".
         if (saved.products) setProducts(saved.products);
         if (Object.keys(saved.categoryImages).length) setCategoryImages(saved.categoryImages);
         if (Object.keys(saved.heroImages).length) setHeroImages(saved.heroImages);
         if (Object.keys(saved.howToImages).length) setHowToImages(saved.howToImages);
         if (saved.coupons) setCoupons(saved.coupons);
-      })
-      .catch(() => { /* sem dados salvos ainda, segue com o padrão */ })
-      .finally(() => { if (!cancelled) setHasLoadedStorage(true); });
+        setStorageLoadError("");
+      } catch (err) {
+        console.error("[Supabase] Falha ao carregar dados:", err);
+        if (!cancelled) {
+          setStorageLoadError(err?.message || "Não foi possível carregar os dados salvos.");
+        }
+      } finally {
+        if (!cancelled) setHasLoadedStorage(true);
+      }
+    })();
+
     return () => { cancelled = true; };
   }, []);
 
   const saveAllChanges = async () => {
+    // Nunca salve enquanto o carregamento inicial não terminou. Caso contrário,
+    // o estado inicial vazio poderia apagar os dados que já existem no banco.
     if (!hasLoadedStorage) {
-      alert("Aguarde o carregamento dos dados antes de salvar.");
+      setToast({ type: "error", message: "Aguarde o carregamento dos dados antes de salvar." });
       return;
     }
+
     setIsSaving(true);
     try {
       await saveAllToSupabase({ products, categoryImages, heroImages, howToImages, coupons });
