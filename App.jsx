@@ -1235,7 +1235,6 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
     setCatImgError("");
     setUploadingCatId(categoryId);
     try {
-      const oldUrl = categoryImages[categoryId];
       const url = await uploadToSupabase(file, "categorias");
       const { data: existing } = await supabase.from("app_category_images").select("id").eq("category_id", categoryId).maybeSingle();
       if (existing) {
@@ -1246,7 +1245,6 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
         if (saveErr) alert("Erro ao inserir categoria: " + saveErr.message);
       }
       setCategoryImages((imgs) => ({ ...imgs, [categoryId]: url }));
-      if (oldUrl) deleteFromSupabaseByUrl(oldUrl);
     } catch (err) {
       setCatImgError("Não foi possível enviar a foto: " + err.message);
     } finally {
@@ -1272,7 +1270,6 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
     setHeroImgError("");
     setUploadingHeroId(bannerId);
     try {
-      const oldUrl = heroImages[bannerId];
       const url = await uploadToSupabase(file, "banners");
       const { data: existing } = await supabase.from("app_hero_images").select("id").eq("banner_id", bannerId).maybeSingle();
       if (existing) {
@@ -1283,7 +1280,6 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
         if (saveErr) alert("Erro ao inserir banner: " + saveErr.message);
       }
       setHeroImages((imgs) => ({ ...imgs, [bannerId]: url }));
-      if (oldUrl) deleteFromSupabaseByUrl(oldUrl);
     } catch (err) {
       setHeroImgError("Não foi possível enviar a foto: " + err.message);
     } finally {
@@ -1309,7 +1305,6 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
     setHowToImgError("");
     setUploadingHowToId(cardId);
     try {
-      const oldUrl = howToImages[cardId];
       const url = await uploadToSupabase(file, "como-comprar");
       const { data: existing } = await supabase.from("app_howto_images").select("id").eq("card_id", cardId).maybeSingle();
       if (existing) {
@@ -1320,7 +1315,6 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
         if (saveErr) alert("Erro ao inserir card: " + saveErr.message);
       }
       setHowToImages((imgs) => ({ ...imgs, [cardId]: url }));
-      if (oldUrl) deleteFromSupabaseByUrl(oldUrl);
     } catch (err) {
       setHowToImgError("Não foi possível enviar a foto: " + err.message);
     } finally {
