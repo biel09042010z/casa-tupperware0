@@ -139,6 +139,7 @@ async function loadAllFromSupabase() {
   const categoryImages = {};
   const { data: catData } = await supabase.from("app_category_images").select("category_id, url");
   (catData || []).forEach((r) => { categoryImages[r.category_id] = r.url ? r.url.split("?")[0] : r.url; });
+  alert("Categorias carregadas: " + JSON.stringify(Object.keys(categoryImages)));
 
   const heroImages = {};
   const { data: heroData } = await supabase.from("app_hero_images").select("banner_id, url");
