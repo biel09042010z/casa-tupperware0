@@ -1267,9 +1267,11 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
       const url = await uploadToSupabase(file, "categorias");
       const { data: existing } = await supabase.from("app_category_images").select("id").eq("category_id", categoryId).maybeSingle();
       if (existing) {
-        await supabase.from("app_category_images").update({ url }).eq("category_id", categoryId);
+        const { error: saveErr } = await supabase.from("app_category_images").update({ url }).eq("category_id", categoryId);
+        if (saveErr) alert("Erro ao atualizar categoria: " + saveErr.message);
       } else {
-        await supabase.from("app_category_images").insert({ category_id: categoryId, url });
+        const { error: saveErr } = await supabase.from("app_category_images").insert({ category_id: categoryId, url });
+        if (saveErr) alert("Erro ao inserir categoria: " + saveErr.message);
       }
       setCategoryImages((imgs) => ({ ...imgs, [categoryId]: url }));
       if (oldUrl) deleteFromSupabaseByUrl(oldUrl);
@@ -1302,9 +1304,11 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
       const url = await uploadToSupabase(file, "banners");
       const { data: existing } = await supabase.from("app_hero_images").select("id").eq("banner_id", bannerId).maybeSingle();
       if (existing) {
-        await supabase.from("app_hero_images").update({ url }).eq("banner_id", bannerId);
+        const { error: saveErr } = await supabase.from("app_hero_images").update({ url }).eq("banner_id", bannerId);
+        if (saveErr) alert("Erro ao atualizar banner: " + saveErr.message);
       } else {
-        await supabase.from("app_hero_images").insert({ banner_id: bannerId, url });
+        const { error: saveErr } = await supabase.from("app_hero_images").insert({ banner_id: bannerId, url });
+        if (saveErr) alert("Erro ao inserir banner: " + saveErr.message);
       }
       setHeroImages((imgs) => ({ ...imgs, [bannerId]: url }));
       if (oldUrl) deleteFromSupabaseByUrl(oldUrl);
@@ -1337,9 +1341,11 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
       const url = await uploadToSupabase(file, "como-comprar");
       const { data: existing } = await supabase.from("app_howto_images").select("id").eq("card_id", cardId).maybeSingle();
       if (existing) {
-        await supabase.from("app_howto_images").update({ url }).eq("card_id", cardId);
+        const { error: saveErr } = await supabase.from("app_howto_images").update({ url }).eq("card_id", cardId);
+        if (saveErr) alert("Erro ao atualizar card: " + saveErr.message);
       } else {
-        await supabase.from("app_howto_images").insert({ card_id: cardId, url });
+        const { error: saveErr } = await supabase.from("app_howto_images").insert({ card_id: cardId, url });
+        if (saveErr) alert("Erro ao inserir card: " + saveErr.message);
       }
       setHowToImages((imgs) => ({ ...imgs, [cardId]: url }));
       if (oldUrl) deleteFromSupabaseByUrl(oldUrl);
