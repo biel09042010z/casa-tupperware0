@@ -733,11 +733,6 @@ function ProductPage({ product, allProducts, goTo, addToCart, viewProduct }) {
       <div className="product-detail">
         <div className="product-gallery">
           <ProductVisual product={product} className="prod-visual-big" />
-          <div className="gallery-thumbs">
-            {Object.entries(SWATCHES).map(([name, hex]) => (
-              <button key={name} className={`thumb ${color === name ? "thumb-active" : ""}`} style={{ background: hex }} onClick={() => setColor(name)} aria-label={name} />
-            ))}
-          </div>
         </div>
         <div className="product-info">
           <span className="badge-pill" style={{ position: "static", display: "inline-flex" }}>{CATEGORIES.find((c) => c.id === product.category)?.name}</span>
@@ -748,17 +743,8 @@ function ProductPage({ product, allProducts, goTo, addToCart, viewProduct }) {
             <span className="price-now price-now-lg">{formatPrice(product.price)}</span>
             {discount && <span className="price-discount">-{discount}%</span>}
           </div>
-          <div className="txt-muted">ou em até 3x de {formatPrice(product.price / 3)} sem juros</div>
+          <div className="txt-muted"></div>
           <p className="product-desc">{product.desc}</p>
-
-          <div className="filter-block">
-            <label>Cor: <strong>{color}</strong></label>
-            <div className="gallery-thumbs">
-              {Object.entries(SWATCHES).map(([name, hex]) => (
-                <button key={name} className={`thumb ${color === name ? "thumb-active" : ""}`} style={{ background: hex }} onClick={() => setColor(name)} aria-label={name} />
-              ))}
-            </div>
-          </div>
 
           <div className="qty-row">
             <label>Quantidade</label>
@@ -784,8 +770,8 @@ function ProductPage({ product, allProducts, goTo, addToCart, viewProduct }) {
           ) : (
             <>
               <div className="product-cta-row">
-                <button className="btn btn-outline" onClick={() => addToCart(product, qty, color)}><ShoppingCart className="w-4 h-4" /> Adicionar ao carrinho</button>
-                <button className="btn btn-primary" onClick={() => { addToCart(product, qty, color); goTo("carrinho"); }}>Comprar agora</button>
+                <button className="btn btn-outline" onClick={() => addToCart(product, qty)}><ShoppingCart className="w-4 h-4" /> Adicionar ao carrinho</button>
+                <button className="btn btn-primary" onClick={() => { addToCart(product, qty); goTo("carrinho"); }}>Comprar agora</button>
               </div>
               <a className="btn btn-whatsapp" href={waLink(waMsg)} target="_blank" rel="noopener noreferrer">
                 <MessageCircle className="w-4 h-4" /> Comprar pelo WhatsApp
@@ -943,7 +929,6 @@ function CartPage({ cart, products, updateQty, removeItem, goTo, clearCart, coup
                 <ProductVisual product={i.product} className="cart-item-visual" />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 600, marginBottom: "0.2rem" }}>{i.product.name}</div>
-                  <div style={{ fontSize: "0.78rem", color: "#6b7280", marginBottom: "0.25rem" }}>Cor: {i.color}</div>
                   <div className="price-now">{formatPrice(i.product.price)}</div>
                 </div>
                 <button className="icon-btn" onClick={() => removeItem(i.productId, i.color)} aria-label="Remover"><Trash2 className="w-4 h-4" /></button>
@@ -1270,7 +1255,7 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
         id: newId, name: form.name, category: form.category, price: Number(form.price), oldPrice: null,
         rating: 5, reviews: 0, badge: "novo", stock: Number(form.stock),
         images: form.images, image: form.images[0] || null, video: form.video,
-        desc: "Novo produto cadastrado pelo painel administrativo.", features: [], capacity: "-", material: "-",
+        desc: "", features: [], capacity: "", material: "",
       }]);
     } else {
       setProducts(products.map((p) => p.id === editing
