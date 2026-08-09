@@ -151,6 +151,9 @@ async function loadAllFromSupabase() {
   const { data: settingsData } = await supabase.from("app_settings").select("key, value").eq("key", "hidden_categories").maybeSingle();
   const hiddenCategories = settingsData ? JSON.parse(settingsData.value || "[]") : [];
 
+  const { data: ordersData } = await supabase.from("app_orders").select("*").order("date", { ascending: false });
+  const orders = (ordersData || []).map((o) => ({ ...o, items: o.items || [] }));
+
   const { data: couponsData } = await supabase.from("app_coupons").select("*");
   const coupons = couponsData && couponsData.length
     ? couponsData.map((c) => ({ code: c.code, discount: c.discount, validade: c.validade || "", active: c.active }))
@@ -166,7 +169,7 @@ async function loadAllFromSupabase() {
       }))
     : null;
 
-  return { products, categoryImages, heroImages, howToImages, coupons, hiddenCategories };
+  return { products, categoryImages, heroImages, howToImages, coupons, hiddenCategories, orders };
 }
 
 /* ============================= COMPONENTES BASE ============================= */
@@ -1323,7 +1326,10 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
     deleteFromSupabaseByUrl(url);
   };
 
-  const updateOrderStatus = (id, status) => setOrders(orders.map((o) => o.id === id ? { ...o, status } : o));
+  const updateOrderStatus = async (id, status) => {
+    setOrders(orders.map((o) => o.id === id ? { ...o, status } : o));
+    await supabase.from("app_orders").update({ status }).eq("id", id);
+  };
   const ORDER_STATUSES = ["Novo", "Em separação", "Enviado", "Entregue", "Cancelado"];
 
   const emptyCouponForm = { code: "", discount: "", validade: "" };
@@ -1551,39 +1557,63 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
         </div>
       )}
 
-      {tab === "pedidos" && (
-        <div>
-          <p className="txt-muted" style={{ marginBottom: "1rem" }}>Pedidos aparecem aqui automaticamente quando um cliente finaliza a compra pelo WhatsApp na loja.</p>
-          {orders.length === 0 ? (
-            <div className="empty-state">Nenhum pedido ainda. Assim que um cliente finalizar uma compra pelo WhatsApp, ele vai aparecer aqui.</div>
-          ) : (
-            <div className="admin-orders-list">
-              {orders.map((o) => (
-                <div key={o.id} className="admin-order-card">
-                  <div className="admin-order-head">
-                    <div>
-                      <strong>{o.id}</strong> · {o.cliente}
-                      <div className="txt-muted" style={{ fontSize: "0.76rem" }}>{new Date(o.date).toLocaleString("pt-BR")}</div>
+      {tab === "pedidos" && (() => {
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const startOfWeek = new Date(startOfDay); startOfWeek.setDate(startOfDay.getDate() - startOfDay.getDay());
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        const grupos = [
+          { label: "Hoje", items: orders.filter((o) => new Date(o.date) >= startOfDay) },
+          { label: "Esta semana", items: orders.filter((o) => new Date(o.date) >= startOfWeek && new Date(o.date) < startOfDay) },
+          { label: "Este mês", items: orders.filter((o) => new Date(o.date) >= startOfMonth && new Date(o.date) < startOfWeek) },
+          { label: "Anteriores", items: orders.filter((o) => new Date(o.date) < startOfMonth) },
+        ].filter((g) => g.items.length > 0);
+
+        const statusColor = { "Novo": "#D6A32C", "Em separação": "#3B82F6", "Enviado": "#8B5CF6", "Entregue": "#1F4B41", "Cancelado": "#DC2626" };
+
+        return (
+          <div>
+            <p className="txt-muted" style={{ marginBottom: "1rem" }}>Pedidos aparecem aqui automaticamente quando um cliente finaliza a compra pelo WhatsApp na loja.</p>
+            {orders.length === 0 ? (
+              <div className="empty-state">Nenhum pedido ainda.</div>
+            ) : grupos.map((g) => (
+              <div key={g.label} style={{ marginBottom: "1.5rem" }}>
+                <h3 style={{ fontWeight: 700, fontSize: "1rem", marginBottom: "0.75rem", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>{g.label} · {g.items.length} pedido{g.items.length !== 1 ? "s" : ""}</h3>
+                <div className="admin-orders-list">
+                  {g.items.map((o) => (
+                    <div key={o.id} className="admin-order-card">
+                      <div className="admin-order-head">
+                        <div>
+                          <strong>{o.id}</strong> · {o.cliente}
+                          <div className="txt-muted" style={{ fontSize: "0.76rem" }}>{new Date(o.date).toLocaleString("pt-BR")}</div>
+                        </div>
+                        <select
+                          value={o.status}
+                          onChange={(e) => updateOrderStatus(o.id, e.target.value)}
+                          className="admin-order-status-select"
+                          style={{ color: statusColor[o.status] || "#000", fontWeight: 600 }}
+                        >
+                          {ORDER_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </div>
+                      <div className="admin-order-items">
+                        {o.items.map((it, i) => (
+                          <div key={i} className="summary-row"><span>{it.qty}x {it.name}</span><span>{formatPrice(it.price * it.qty)}</span></div>
+                        ))}
+                      </div>
+                      {o.payment && <div className="txt-muted" style={{ fontSize: "0.8rem" }}>Pagamento: <strong>{o.payment}</strong></div>}
+                      {o.coupon && <div className="txt-muted" style={{ fontSize: "0.8rem" }}>Cupom aplicado: <strong>{o.coupon}</strong></div>}
+                      {o.obs && <div className="txt-muted" style={{ fontSize: "0.8rem" }}>Obs: {o.obs}</div>}
+                      <div className="summary-row summary-total"><span>Total</span><span>{formatPrice(o.total)}</span></div>
                     </div>
-                    <select value={o.status} onChange={(e) => updateOrderStatus(o.id, e.target.value)} className="admin-order-status-select">
-                      {ORDER_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                  </div>
-                  <div className="admin-order-items">
-                    {o.items.map((it, i) => (
-                      <div key={i} className="summary-row"><span>{it.qty}x {it.name}</span><span>{formatPrice(it.price * it.qty)}</span></div>
-                    ))}
-                  </div>
-                  {o.payment && <div className="txt-muted" style={{ fontSize: "0.8rem" }}>Pagamento: <strong>{o.payment}</strong></div>}
-                  {o.coupon && <div className="txt-muted" style={{ fontSize: "0.8rem" }}>Cupom aplicado: <strong>{o.coupon}</strong></div>}
-                  {o.obs && <div className="txt-muted" style={{ fontSize: "0.8rem" }}>Obs: {o.obs}</div>}
-                  <div className="summary-row summary-total"><span>Total</span><span>{formatPrice(o.total)}</span></div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+              </div>
+            ))}
+          </div>
+        );
+      })()}
 
       {tab === "cupons" && (
         <div>
@@ -1769,7 +1799,15 @@ export default function App() {
     { code: "TUPPER10", discount: 10, validade: "", active: true },
   ]);
   const [orders, setOrders] = useState([]);
-  const addOrder = (order) => setOrders((o) => [order, ...o]);
+  const addOrder = async (order) => {
+    setOrders((o) => [order, ...o]);
+    await supabase.from("app_orders").insert({
+      id: order.id, cliente: order.cliente, date: order.date,
+      items: order.items, payment: order.payment || null,
+      coupon: order.coupon || null, obs: order.obs || null,
+      total: order.total, status: order.status || "Novo",
+    });
+  };
 
   const [galeriaImagens, setGaleriaImagens] = useState([]);
 
@@ -1793,6 +1831,7 @@ export default function App() {
         if (Object.keys(saved.howToImages).length) setHowToImages(saved.howToImages);
         if (saved.coupons) setCoupons(saved.coupons);
         if (saved.hiddenCategories && saved.hiddenCategories.length) setHiddenCategories(saved.hiddenCategories);
+        if (saved.orders && saved.orders.length) setOrders(saved.orders);
       })
       .catch(() => { /* sem dados salvos ainda, segue com o padrão */ })
       .finally(() => { if (!cancelled) setHasLoadedStorage(true); });
