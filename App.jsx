@@ -935,20 +935,24 @@ function CartPage({ cart, products, updateQty, removeItem, goTo, clearCart, coup
       <div className="cart-layout">
         <div className="cart-items">
           {items.map((i) => (
-            <div key={i.productId + i.color} className="cart-item">
-              <ProductVisual product={i.product} className="cart-item-visual" />
-              <div className="cart-item-info">
-                <span className="cart-item-name">{i.product.name}</span>
-                <span className="txt-muted" style={{ fontSize: "0.78rem" }}>Cor: {i.color}</span>
-                <span className="price-now">{formatPrice(i.product.price)}</span>
+            <div key={i.productId + i.color} className="cart-item" style={{ display: "flex", flexDirection: "column", gap: "0.75rem", padding: "1rem", border: "1px solid #e5e7eb", borderRadius: "0.75rem", marginBottom: "0.75rem" }}>
+              <div style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start" }}>
+                <ProductVisual product={i.product} className="cart-item-visual" />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600, marginBottom: "0.2rem" }}>{i.product.name}</div>
+                  <div style={{ fontSize: "0.78rem", color: "#6b7280", marginBottom: "0.25rem" }}>Cor: {i.color}</div>
+                  <div className="price-now">{formatPrice(i.product.price)}</div>
+                </div>
+                <button className="icon-btn" onClick={() => removeItem(i.productId, i.color)} aria-label="Remover"><Trash2 className="w-4 h-4" /></button>
               </div>
-              <div className="stepper" style={{ display: "flex", alignItems: "center", gap: "0.5rem", border: "1px solid #e5e7eb", borderRadius: "2rem", padding: "0.25rem 0.5rem" }}>
-                <button style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", padding: "0.25rem" }} onClick={() => updateQty(i.productId, i.color, Math.max(1, i.qty - 1))}><Minus className="w-4 h-4" /></button>
-                <span style={{ minWidth: "1.5rem", textAlign: "center", fontWeight: 600 }}>{i.qty}</span>
-                <button style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", padding: "0.25rem" }} onClick={() => updateQty(i.productId, i.color, i.qty + 1)}><Plus className="w-4 h-4" /></button>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", border: "1px solid #e5e7eb", borderRadius: "2rem", padding: "0.3rem 0.75rem" }}>
+                  <button style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", padding: "0.2rem" }} onClick={() => updateQty(i.productId, i.color, Math.max(1, i.qty - 1))}><Minus className="w-4 h-4" /></button>
+                  <span style={{ minWidth: "1.5rem", textAlign: "center", fontWeight: 600 }}>{i.qty}</span>
+                  <button style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", padding: "0.2rem" }} onClick={() => updateQty(i.productId, i.color, i.qty + 1)}><Plus className="w-4 h-4" /></button>
+                </div>
+                <span style={{ fontWeight: 700, fontSize: "1rem" }}>{formatPrice(i.product.price * i.qty)}</span>
               </div>
-              <span className="cart-item-total">{formatPrice(i.product.price * i.qty)}</span>
-              <button className="icon-btn" onClick={() => removeItem(i.productId, i.color)} aria-label="Remover"><Trash2 className="w-4 h-4" /></button>
             </div>
           ))}
           <button className="link-more" onClick={() => goTo("busca")}><ChevronLeft className="w-4 h-4" /> Continuar comprando</button>
