@@ -1326,7 +1326,7 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
     deleteFromSupabaseByUrl(url);
   };
 
-  const updateOrderStatus = async (id, status) => {
+  const [showArchived, setShowArchived] = useState(false);
     setOrders(orders.map((o) => o.id === id ? { ...o, status } : o));
     await supabase.from("app_orders").update({ status }).eq("id", id);
   };
@@ -1562,7 +1562,6 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
       )}
 
       {tab === "pedidos" && (() => {
-        const [showArchived, setShowArchived] = React.useState(false);
         const activeOrders = orders.filter((o) => showArchived ? o.status === "arquivado" : o.status !== "arquivado");
 
         const now = new Date();
