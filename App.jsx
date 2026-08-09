@@ -1330,6 +1330,10 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
     setOrders(orders.map((o) => o.id === id ? { ...o, status } : o));
     await supabase.from("app_orders").update({ status }).eq("id", id);
   };
+  const archiveOrder = async (id) => {
+    setOrders(orders.map((o) => o.id === id ? { ...o, archived: true } : o));
+    await supabase.from("app_orders").update({ status: "arquivado" }).eq("id", id);
+  };
   const ORDER_STATUSES = ["Novo", "Em separação", "Enviado", "Entregue", "Cancelado"];
 
   const emptyCouponForm = { code: "", discount: "", validade: "" };
@@ -1558,25 +1562,33 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
       )}
 
       {tab === "pedidos" && (() => {
+        const [showArchived, setShowArchived] = React.useState(false);
+        const activeOrders = orders.filter((o) => showArchived ? o.status === "arquivado" : o.status !== "arquivado");
+
         const now = new Date();
         const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const startOfWeek = new Date(startOfDay); startOfWeek.setDate(startOfDay.getDate() - startOfDay.getDay());
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
         const grupos = [
-          { label: "Hoje", items: orders.filter((o) => new Date(o.date) >= startOfDay) },
-          { label: "Esta semana", items: orders.filter((o) => new Date(o.date) >= startOfWeek && new Date(o.date) < startOfDay) },
-          { label: "Este mês", items: orders.filter((o) => new Date(o.date) >= startOfMonth && new Date(o.date) < startOfWeek) },
-          { label: "Anteriores", items: orders.filter((o) => new Date(o.date) < startOfMonth) },
+          { label: "Hoje", items: activeOrders.filter((o) => new Date(o.date) >= startOfDay) },
+          { label: "Esta semana", items: activeOrders.filter((o) => new Date(o.date) >= startOfWeek && new Date(o.date) < startOfDay) },
+          { label: "Este mês", items: activeOrders.filter((o) => new Date(o.date) >= startOfMonth && new Date(o.date) < startOfWeek) },
+          { label: "Anteriores", items: activeOrders.filter((o) => new Date(o.date) < startOfMonth) },
         ].filter((g) => g.items.length > 0);
 
         const statusColor = { "Novo": "#D6A32C", "Em separação": "#3B82F6", "Enviado": "#8B5CF6", "Entregue": "#1F4B41", "Cancelado": "#DC2626" };
 
         return (
           <div>
-            <p className="txt-muted" style={{ marginBottom: "1rem" }}>Pedidos aparecem aqui automaticamente quando um cliente finaliza a compra pelo WhatsApp na loja.</p>
-            {orders.length === 0 ? (
-              <div className="empty-state">Nenhum pedido ainda.</div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+              <p className="txt-muted" style={{ margin: 0 }}>Pedidos finalizados pelo WhatsApp.</p>
+              <button className="btn btn-outline btn-sm" onClick={() => setShowArchived((v) => !v)}>
+                {showArchived ? "Ver ativos" : "Ver arquivados"}
+              </button>
+            </div>
+            {activeOrders.length === 0 ? (
+              <div className="empty-state">{showArchived ? "Nenhum pedido arquivado." : "Nenhum pedido ainda."}</div>
             ) : grupos.map((g) => (
               <div key={g.label} style={{ marginBottom: "1.5rem" }}>
                 <h3 style={{ fontWeight: 700, fontSize: "1rem", marginBottom: "0.75rem", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>{g.label} · {g.items.length} pedido{g.items.length !== 1 ? "s" : ""}</h3>
@@ -1606,6 +1618,15 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
                       {o.coupon && <div className="txt-muted" style={{ fontSize: "0.8rem" }}>Cupom aplicado: <strong>{o.coupon}</strong></div>}
                       {o.obs && <div className="txt-muted" style={{ fontSize: "0.8rem" }}>Obs: {o.obs}</div>}
                       <div className="summary-row summary-total"><span>Total</span><span>{formatPrice(o.total)}</span></div>
+                      {(o.status === "Entregue" || o.status === "Cancelado") && !showArchived && (
+                        <button
+                          className="btn btn-outline btn-sm"
+                          style={{ marginTop: "0.5rem", width: "100%", color: "#6b7280" }}
+                          onClick={() => archiveOrder(o.id)}
+                        >
+                          Arquivar pedido
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
