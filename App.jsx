@@ -2072,15 +2072,15 @@ function GlobalStyles() {
 
       /* Header */
       .site-header { position: sticky; top: 0; z-index: 50; background: var(--cream); border-bottom: 1px solid var(--line); }
-      .header-inner { max-width: 1240px; margin: 0 auto; display: flex; align-items: center; gap: 1.25rem; padding: 0.85rem 1.5rem; }
-      .logo { display: flex; align-items: center; gap: 0.5rem; background: none; border: none; margin-right: 0.5rem; }
-      .logo-mark { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, #2A6B58 0%, #1F4B41 45%, #B8871C 100%); color: var(--cream); display: flex; align-items: center; justify-content: center; font-family: 'Fraunces', serif; font-weight: 600; font-size: 0.95rem; letter-spacing: -0.02em; flex-shrink: 0; box-shadow: 0 3px 8px rgba(31,75,65,0.35), inset 0 1px 0 rgba(255,255,255,0.25); }
-      .logo-word { font-weight: 600; font-size: clamp(1rem, 2.4vw, 1.3rem); letter-spacing: 0.01em; color: var(--forest); white-space: nowrap; }
-      .main-nav { display: flex; gap: 1.6rem; flex: 1; }
+      .header-inner { max-width: 1240px; margin: 0 auto; display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 1rem; }
+      .logo { display: flex; align-items: center; gap: 0.5rem; background: none; border: none; margin-right: 0.25rem; flex-shrink: 0; }
+      .logo-mark { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, #2A6B58 0%, #1F4B41 45%, #B8871C 100%); color: var(--cream); display: flex; align-items: center; justify-content: center; font-family: 'Fraunces', serif; font-weight: 600; font-size: 0.9rem; letter-spacing: -0.02em; flex-shrink: 0; box-shadow: 0 3px 8px rgba(31,75,65,0.35), inset 0 1px 0 rgba(255,255,255,0.25); }
+      .logo-word { font-weight: 600; font-size: clamp(0.85rem, 2.4vw, 1.3rem); letter-spacing: 0.01em; color: var(--forest); white-space: nowrap; }
+      .main-nav { display: flex; gap: 1.6rem; flex: 1; overflow: hidden; }
       .nav-link { background: none; border: none; color: var(--ink); font-size: 0.92rem; font-weight: 500; padding: 0.4rem 0; border-bottom: 2px solid transparent; }
       .nav-link:hover { border-bottom: 2px solid var(--gold); }
-      .header-actions { display: flex; align-items: center; gap: 0.4rem; margin-left: auto; }
-      .icon-btn { background: none; border: none; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--ink); }
+      .header-actions { display: flex; align-items: center; gap: 0.25rem; margin-left: auto; flex-shrink: 0; }
+      .icon-btn { background: none; border: none; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--ink); flex-shrink: 0; }
       .icon-btn:hover { background: var(--sage-bg); }
       .cart-btn { position: relative; }
       .cart-badge { position: absolute; top: 0; right: 0; background: var(--brick); color: white; font-size: 0.65rem; min-width: 17px; height: 17px; border-radius: 999px; display: flex; align-items: center; justify-content: center; font-weight: 700; }
