@@ -1388,6 +1388,8 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
   };
 
   const [showArchived, setShowArchived] = useState(false);
+
+  const updateOrderStatus = async (id, status) => {
     setOrders(orders.map((o) => o.id === id ? { ...o, status } : o));
     await supabase.from("app_orders").update({ status }).eq("id", id);
   };
