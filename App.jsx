@@ -1310,7 +1310,8 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
     setUploadingCatId(categoryId);
     try {
       const url = await uploadToSupabase(file, "categorias");
-      await supabase.from("app_category_images").delete().eq("category_id", categoryId);
+      const { error: delErr } = await supabase.from("app_category_images").delete().eq("category_id", categoryId);
+      if (delErr) alert("Erro ao deletar anterior: " + delErr.message);
       const { error: saveErr } = await supabase.from("app_category_images").insert({ category_id: categoryId, url });
       if (saveErr) alert("Erro ao salvar categoria: " + saveErr.message);
       setCategoryImages((imgs) => ({ ...imgs, [categoryId]: url }));
