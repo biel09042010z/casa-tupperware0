@@ -1458,12 +1458,12 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
                 {CATEGORIES.filter((c) => c.id !== "ofertas").map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
               <input type="number" step="0.01" placeholder="Preço original (ex: 49.90)" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <input type="number" min="0" max="99" placeholder="Desconto % (deixe 0 para sem desconto)" value={form.discountPct} onChange={(e) => setForm({ ...form, discountPct: e.target.value })} style={{ flex: 1 }} />
+              <div>
+                <input type="number" min="0" max="99" placeholder="Desconto % (0 = sem desconto)" value={form.discountPct} onChange={(e) => setForm({ ...form, discountPct: e.target.value })} style={{ width: "100%" }} />
                 {Number(form.discountPct) > 0 && Number(form.price) > 0 && (
-                  <span style={{ fontSize: "0.85rem", color: "#1F4B41", fontWeight: 600, whiteSpace: "nowrap" }}>
-                    → R$ {(Number(form.price) * (1 - Number(form.discountPct) / 100)).toFixed(2)}
-                  </span>
+                  <div style={{ marginTop: "0.4rem", fontSize: "0.85rem", color: "#1F4B41", fontWeight: 600 }}>
+                    De <span style={{ textDecoration: "line-through", color: "#9ca3af" }}>R$ {Number(form.price).toFixed(2)}</span> por <span>R$ {(Number(form.price) * (1 - Number(form.discountPct) / 100)).toFixed(2)}</span> ({Number(form.discountPct)}% off)
+                  </div>
                 )}
               </div>
               <input type="number" placeholder="Estoque (0 = esgotado)" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} />
