@@ -1184,14 +1184,17 @@ function PedidosTab({ orders, showArchived, setShowArchived, updateOrderStatus, 
 function AdminPage({ products, setProducts, categoryImages, setCategoryImages, heroImages, setHeroImages, howToImages, setHowToImages, coupons, setCoupons, orders, setOrders, onSaveAll, isSaving, onLogout, galeriaImagens, setGaleriaImagens, hiddenCategories, setHiddenCategories }) {
   const [tab, setTab] = useState("produtos");
   const [editing, setEditing] = useState(null);
-  const emptyForm = { name: "", category: "potes", price: "", stock: "", images: [], video: null };
+  const emptyForm = { name: "", category: "potes", price: "", stock: "", images: [], video: null, discountPct: "" };
   const [form, setForm] = useState(emptyForm);
   const [imgError, setImgError] = useState("");
   const [videoError, setVideoError] = useState("");
   const [formError, setFormError] = useState("");
 
   const startNew = () => { setEditing("new"); setForm(emptyForm); setImgError(""); setVideoError(""); setFormError(""); };
-  const startEdit = (p) => { setEditing(p.id); setForm({ name: p.name, category: p.category, price: p.price, stock: p.stock, images: p.images && p.images.length ? p.images : (p.image ? [p.image] : []), video: p.video || null }); setImgError(""); setVideoError(""); setFormError(""); };
+  const startEdit = (p) => {
+    const pct = p.oldPrice && p.price ? Math.round((1 - p.price / p.oldPrice) * 100) : "";
+    setEditing(p.id); setForm({ name: p.name, category: p.category, price: p.oldPrice || p.price, stock: p.stock, images: p.images && p.images.length ? p.images : (p.image ? [p.image] : []), video: p.video || null, discountPct: pct }); setImgError(""); setVideoError(""); setFormError("");
+  };
   const cancel = () => { setEditing(null); setForm(emptyForm); setImgError(""); setVideoError(""); setFormError(""); };
 
   const [uploadingImages, setUploadingImages] = useState(false);
@@ -1249,17 +1252,21 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
       return;
     }
     setFormError("");
+    const basePrice = Number(form.price);
+    const pct = Number(form.discountPct) || 0;
+    const finalPrice = pct > 0 ? Number((basePrice * (1 - pct / 100)).toFixed(2)) : basePrice;
+    const oldPrice = pct > 0 ? basePrice : null;
     if (editing === "new") {
       const newId = Math.max(0, ...products.map((p) => p.id)) + 1;
       setProducts([...products, {
-        id: newId, name: form.name, category: form.category, price: Number(form.price), oldPrice: null,
-        rating: 5, reviews: 0, badge: "novo", stock: Number(form.stock),
+        id: newId, name: form.name, category: form.category, price: finalPrice, oldPrice,
+        rating: 5, reviews: 0, badge: pct > 0 ? "oferta" : "novo", stock: Number(form.stock),
         images: form.images, image: form.images[0] || null, video: form.video,
         desc: "", features: [], capacity: "", material: "",
       }]);
     } else {
       setProducts(products.map((p) => p.id === editing
-        ? { ...p, name: form.name, category: form.category, price: Number(form.price), stock: Number(form.stock), images: form.images, image: form.images[0] || null, video: form.video }
+        ? { ...p, name: form.name, category: form.category, price: finalPrice, oldPrice, stock: Number(form.stock), images: form.images, image: form.images[0] || null, video: form.video }
         : p));
     }
     cancel();
@@ -1450,7 +1457,15 @@ function AdminPage({ products, setProducts, categoryImages, setCategoryImages, h
               <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
                 {CATEGORIES.filter((c) => c.id !== "ofertas").map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
-              <input type="number" step="0.01" placeholder="Preço (ex: 49.90)" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
+              <input type="number" step="0.01" placeholder="Preço original (ex: 49.90)" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <input type="number" min="0" max="99" placeholder="Desconto % (deixe 0 para sem desconto)" value={form.discountPct} onChange={(e) => setForm({ ...form, discountPct: e.target.value })} style={{ flex: 1 }} />
+                {Number(form.discountPct) > 0 && Number(form.price) > 0 && (
+                  <span style={{ fontSize: "0.85rem", color: "#1F4B41", fontWeight: 600, whiteSpace: "nowrap" }}>
+                    → R$ {(Number(form.price) * (1 - Number(form.discountPct) / 100)).toFixed(2)}
+                  </span>
+                )}
+              </div>
               <input type="number" placeholder="Estoque (0 = esgotado)" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} />
 
               <div className="admin-image-field">
