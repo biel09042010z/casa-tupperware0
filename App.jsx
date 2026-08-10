@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { createClient } from "@supabase/supabase-js";
 import {
-  Search, ShoppingCart, User, Menu, X, MessageCircle, Star, Heart,
+  Search, ShoppingCart, User, Menu, X, MessageCircle, Heart,
   ChevronLeft, ChevronRight, Plus, Minus, Trash2, Package, LayoutGrid,
   UtensilsCrossed, GlassWater, Snowflake, Coffee, Baby, Percent,
   Truck, ShieldCheck, Sparkles, ArrowRight, Check, Instagram,
@@ -242,21 +242,6 @@ function Reveal({ children, className = "", delay = 0 }) {
   );
 }
 
-function StarRating({ rating, reviews, size = "sm" }) {
-  const full = Math.round(rating);
-  return (
-    <div className="flex items-center gap-1.5">
-      <div className="flex items-center gap-0.5">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <Star key={i} className={size === "sm" ? "w-3.5 h-3.5" : "w-4 h-4"}
-            style={{ fill: i <= full ? "#D6A32C" : "none", color: i <= full ? "#D6A32C" : "#C9C5B6" }} />
-        ))}
-      </div>
-      {reviews != null && <span className="txt-muted" style={{ fontSize: "0.75rem" }}>({reviews})</span>}
-    </div>
-  );
-}
-
 function ProductVisual({ product, className = "" }) {
   const cat = CATEGORIES.find((c) => c.id === product.category);
   const Icon = cat?.icon || Package;
@@ -276,8 +261,6 @@ function ProductVisual({ product, className = "" }) {
           </div>
         </>
       )}
-      {hasPhoto && <div className="prod-visual-gradient" />}
-      <div className="prod-visual-scrim" />
       {outOfStock ? (
         <span className="badge-pill badge-esgotado">Esgotado</span>
       ) : product.badge ? (
@@ -297,13 +280,12 @@ function ProductCard({ product, onView, onAddToCart, compact }) {
     <div className={`product-card ${compact ? "product-card-compact" : ""} ${outOfStock ? "product-card-out" : ""}`}
       onClick={() => onView(product.id)} role="button" tabIndex={0}>
       <ProductVisual product={product} />
-      <div className="product-card-overlay">
+      <div className="product-card-body">
         {product.oldPrice && discount && <span className="price-discount price-discount-overlay">-{discount}%</span>}
-        <h3 className="prod-title-overlay">{product.name}</h3>
-        <StarRating rating={product.rating} reviews={product.reviews} />
+        <h3 className="prod-title">{product.name}</h3>
         <div className="price-row">
-          {product.oldPrice && <span className="price-old price-old-overlay">{formatPrice(product.oldPrice)}</span>}
-          <span className="price-now price-now-overlay">{formatPrice(product.price)}</span>
+          {product.oldPrice && <span className="price-old">{formatPrice(product.oldPrice)}</span>}
+          <span className="price-now">{formatPrice(product.price)}</span>
         </div>
         {outOfStock ? (
           <button className="btn btn-sm btn-disabled btn-card-cta" disabled onClick={(e) => e.stopPropagation()}>Esgotado</button>
@@ -630,6 +612,9 @@ function Footer({ goTo }) {
           <Lock className="w-3.5 h-3.5" />
         </button>
       </div>
+      <div className="footer-disclaimer">
+        Tupperware® é uma marca registrada de seu respectivo proprietário. Este site é de uma revendedora independente e não representa o site oficial da Tupperware.
+      </div>
     </footer>
   );
 }
@@ -737,7 +722,6 @@ function ProductPage({ product, allProducts, goTo, addToCart, viewProduct }) {
         <div className="product-info">
           <span className="badge-pill" style={{ position: "static", display: "inline-flex" }}>{CATEGORIES.find((c) => c.id === product.category)?.name}</span>
           <h1>{product.name}</h1>
-          <StarRating rating={product.rating} reviews={product.reviews} size="md" />
           <div className="price-row" style={{ marginTop: "0.75rem" }}>
             {product.oldPrice && <span className="price-old">{formatPrice(product.oldPrice)}</span>}
             <span className="price-now price-now-lg">{formatPrice(product.price)}</span>
@@ -2172,27 +2156,23 @@ function GlobalStyles() {
       .product-scroll { display: flex; gap: 1.25rem; overflow-x: auto; padding-bottom: 0.75rem; scroll-snap-type: x mandatory; }
       .product-scroll .product-card-compact { min-width: 280px; scroll-snap-align: start; }
       @media (max-width: 1024px) { .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-      @media (max-width: 720px) { .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 1rem; row-gap: 1.4rem; } .product-card { min-height: 220px; } .prod-title-overlay { font-size: 0.88rem; } .price-now-overlay { font-size: 1.1rem; } .product-card-overlay { padding: 0.8rem 0.9rem 0.9rem; } }
+      @media (max-width: 720px) { .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 1rem; row-gap: 1.4rem; } .prod-title { font-size: 0.88rem; } .price-now { font-size: 1.05rem; } .product-card-body { padding: 0.8rem 0.9rem 0.9rem; } }
 
-      .product-card { position: relative; border-radius: 20px; overflow: hidden; aspect-ratio: 3/4; min-height: 340px; min-width: 0; width: 100%; box-sizing: border-box; cursor: pointer; box-shadow: 0 10px 26px rgba(30,50,40,0.10); transition: transform 0.18s ease, box-shadow 0.18s ease; background: linear-gradient(160deg, #EDF1E7, #F8F6EF); }
+      .product-card { position: relative; border-radius: 20px; overflow: hidden; min-width: 0; width: 100%; box-sizing: border-box; cursor: pointer; box-shadow: 0 10px 26px rgba(30,50,40,0.10); transition: transform 0.18s ease, box-shadow 0.18s ease; background: #FDFCF7; display: flex; flex-direction: column; }
       .product-card:hover { transform: translateY(-5px); box-shadow: 0 22px 38px rgba(30,50,40,0.18); }
       .product-card-compact { min-width: 260px; }
-      .product-card > .prod-visual { position: absolute; inset: 0; border-radius: 0; }
+      .product-card > .prod-visual { position: relative; border-radius: 0; }
       .prod-visual { position: relative; aspect-ratio: 1.15/1; display: flex; align-items: center; justify-content: center; background: linear-gradient(160deg, #EDF1E7, #F8F6EF); }
       .prod-visual-photo { background-size: cover; background-position: center; }
       .prod-visual-ring { position: absolute; width: 62%; height: 62%; border-radius: 50%; background: radial-gradient(circle, rgba(31,75,65,0.10), transparent 70%); }
       .prod-visual-icon { width: 34%; height: 34%; color: var(--forest); position: relative; z-index: 2; }
       .prod-visual-big { aspect-ratio: 1/1; border-radius: 20px; min-height: 340px; }
-      .prod-visual-gradient { position: absolute; inset: 0; background: linear-gradient(to top, rgba(10,20,15,0.55) 0%, rgba(10,20,15,0) 55%); z-index: 2; }
-      .prod-visual-scrim { position: absolute; left: 0; right: 0; bottom: 0; height: 68%; background: linear-gradient(to top, rgba(8,16,12,0.96) 0%, rgba(8,16,12,0.82) 40%, rgba(8,16,12,0.35) 75%, rgba(8,16,12,0) 100%); z-index: 3; }
       .badge-pill { position: absolute; top: 12px; left: 12px; font-size: 0.7rem; font-weight: 700; padding: 0.32rem 0.7rem; border-radius: 999px; z-index: 5; }
-      .product-card-overlay { position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; padding: 1.1rem 1.2rem 1.2rem; display: flex; flex-direction: column; gap: 0.4rem; background: linear-gradient(to top, rgba(6,12,9,0.55) 0%, rgba(6,12,9,0) 100%); }
-      .prod-title-overlay { color: white; font-size: 1.02rem; font-weight: 600; line-height: 1.3; margin: 0; text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 2px 10px rgba(0,0,0,0.6); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+      .product-card-body { position: relative; flex: 1; padding: 1rem 1.1rem 1.1rem; display: flex; flex-direction: column; gap: 0.4rem; background: #FDFCF7; }
+      .prod-title { color: var(--ink); font-size: 1.02rem; font-weight: 600; line-height: 1.3; margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
       .price-row { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
       .price-old { text-decoration: line-through; color: #A6A296; font-size: 0.82rem; }
-      .price-old-overlay { color: rgba(255,255,255,0.7); }
       .price-now { font-size: 1.1rem; font-weight: 700; color: var(--forest); }
-      .price-now-overlay { color: white; font-size: 1.35rem; text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 2px 10px rgba(0,0,0,0.6); }
       .price-now-lg { font-size: 1.9rem; }
       .price-discount { background: rgba(193,68,60,0.12); color: var(--brick); font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.45rem; border-radius: 6px; }
       .price-discount-overlay { position: absolute; top: 12px; right: 12px; background: var(--brick); color: white; z-index: 5; }
@@ -2237,6 +2217,7 @@ function GlobalStyles() {
       .footer-bottom { max-width: 1240px; margin: 2.5rem auto 0; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.12); display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; opacity: 0.7; flex-wrap: wrap; gap: 0.5rem; }
       .footer-admin-link { background: none; border: none; color: rgba(255,255,255,0.35); display: flex; align-items: center; justify-content: center; padding: 0.3rem; border-radius: 50%; }
       .footer-admin-link:hover { color: rgba(255,255,255,0.7); }
+      .footer-disclaimer { max-width: 1240px; margin: 1rem auto 0; font-size: 0.72rem; line-height: 1.5; opacity: 0.55; text-align: center; }
       @media (max-width: 860px) { .footer-grid { grid-template-columns: repeat(2, 1fr); } }
 
       /* WhatsApp float */
@@ -2294,7 +2275,7 @@ function GlobalStyles() {
       .cart-item { display: grid; grid-template-columns: 64px 1fr auto auto auto; align-items: center; gap: 1rem; background: white; border: 1px solid var(--line); border-radius: 14px; padding: 0.75rem; }
       .cart-item-visual { width: 64px; height: 64px; border-radius: 10px; }
       .cart-item-visual .prod-visual-icon { width: 40%; height: 40%; }
-      .cart-item-visual .badge-pill, .cart-item-visual .prod-visual-scrim, .cart-item-visual .prod-visual-gradient { display: none; }
+      .cart-item-visual .badge-pill { display: none; }
       .cart-item-info { display: flex; flex-direction: column; gap: 0.15rem; }
       .cart-item-name { font-weight: 600; font-size: 0.88rem; }
       .cart-item-total { font-weight: 700; color: var(--forest); }
