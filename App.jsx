@@ -2168,11 +2168,11 @@ function GlobalStyles() {
       @media (max-width: 860px) { .category-grid { grid-template-columns: repeat(2, 1fr); } }
 
       /* Product cards */
-      .product-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+      .product-grid { display: grid; grid-template-columns: repeat(3, 1fr); column-gap: 1.5rem; row-gap: 2rem; }
       .product-scroll { display: flex; gap: 1.25rem; overflow-x: auto; padding-bottom: 0.75rem; scroll-snap-type: x mandatory; }
       .product-scroll .product-card-compact { min-width: 280px; scroll-snap-align: start; }
       @media (max-width: 1024px) { .product-grid { grid-template-columns: repeat(2, 1fr); } }
-      @media (max-width: 720px) { .product-grid { grid-template-columns: repeat(2, 1fr); gap: 0.9rem; } .product-card { min-height: 260px; } }
+      @media (max-width: 720px) { .product-grid { grid-template-columns: repeat(2, 1fr); column-gap: 1.1rem; row-gap: 1.6rem; } .product-card { min-height: 260px; } }
 
       .product-card { position: relative; border-radius: 20px; overflow: hidden; aspect-ratio: 3/4; min-height: 340px; cursor: pointer; box-shadow: 0 10px 26px rgba(30,50,40,0.10); transition: transform 0.18s ease, box-shadow 0.18s ease; background: linear-gradient(160deg, #EDF1E7, #F8F6EF); }
       .product-card:hover { transform: translateY(-5px); box-shadow: 0 22px 38px rgba(30,50,40,0.18); }
@@ -2187,7 +2187,7 @@ function GlobalStyles() {
       .prod-visual-scrim { position: absolute; left: 0; right: 0; bottom: 0; height: 62%; background: linear-gradient(to top, rgba(10,22,16,0.92) 0%, rgba(10,22,16,0.55) 55%, rgba(10,22,16,0) 100%); z-index: 3; }
       .badge-pill { position: absolute; top: 12px; left: 12px; font-size: 0.7rem; font-weight: 700; padding: 0.32rem 0.7rem; border-radius: 999px; z-index: 5; }
       .product-card-overlay { position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; padding: 1.1rem 1.2rem 1.2rem; display: flex; flex-direction: column; gap: 0.4rem; }
-      .prod-title-overlay { color: white; font-size: 1.02rem; font-weight: 600; line-height: 1.3; margin: 0; text-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+      .prod-title-overlay { color: white; font-size: 1.02rem; font-weight: 600; line-height: 1.3; margin: 0; text-shadow: 0 2px 8px rgba(0,0,0,0.3); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
       .price-row { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
       .price-old { text-decoration: line-through; color: #A6A296; font-size: 0.82rem; }
       .price-old-overlay { color: rgba(255,255,255,0.7); }
