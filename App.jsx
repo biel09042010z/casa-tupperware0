@@ -2350,9 +2350,9 @@ function GlobalStyles() {
       .admin-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--line); overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
       .admin-tabs button { background: none; border: none; padding: 0.7rem 1.1rem; font-weight: 600; color: #7A7A6E; border-bottom: 2px solid transparent; white-space: nowrap; flex-shrink: 0; }
       .admin-tab-active { color: var(--forest) !important; border-bottom: 2px solid var(--forest) !important; }
-      .admin-form { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; background: white; border: 1px solid var(--line); border-radius: 14px; padding: 1.25rem; margin-bottom: 1.25rem; }
-      .admin-form input, .admin-form select { padding: 0.6rem 0.8rem; border-radius: 10px; border: 1px solid var(--line); outline: none; }
-      .admin-form-actions { grid-column: 1 / -1; display: flex; gap: 0.5rem; }
+      .admin-form { display: grid; grid-template-columns: 1fr; gap: 0.75rem; background: white; border: 1px solid var(--line); border-radius: 14px; padding: 1.25rem; margin-bottom: 1.25rem; }
+      .admin-form input, .admin-form select { padding: 0.6rem 0.8rem; border-radius: 10px; border: 1px solid var(--line); outline: none; width: 100%; box-sizing: border-box; }
+      .admin-form-actions { display: flex; gap: 0.5rem; }
       .admin-table-wrap { background: white; border: 1px solid var(--line); border-radius: 14px; overflow-x: auto; }
       .admin-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
       .admin-table th { text-align: left; padding: 0.9rem 1rem; background: var(--sage-bg); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; color: #6C6C60; }
