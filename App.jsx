@@ -2168,13 +2168,13 @@ function GlobalStyles() {
       @media (max-width: 860px) { .category-grid { grid-template-columns: repeat(2, 1fr); } }
 
       /* Product cards */
-      .product-grid { display: grid; grid-template-columns: repeat(3, 1fr); column-gap: 1.5rem; row-gap: 2rem; }
+      .product-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 1.5rem; row-gap: 2rem; }
       .product-scroll { display: flex; gap: 1.25rem; overflow-x: auto; padding-bottom: 0.75rem; scroll-snap-type: x mandatory; }
       .product-scroll .product-card-compact { min-width: 280px; scroll-snap-align: start; }
-      @media (max-width: 1024px) { .product-grid { grid-template-columns: repeat(2, 1fr); } }
-      @media (max-width: 720px) { .product-grid { grid-template-columns: repeat(2, 1fr); column-gap: 1.1rem; row-gap: 1.6rem; } .product-card { min-height: 260px; } }
+      @media (max-width: 1024px) { .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+      @media (max-width: 720px) { .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 1rem; row-gap: 1.4rem; } .product-card { min-height: 220px; } .prod-title-overlay { font-size: 0.88rem; } .price-now-overlay { font-size: 1.1rem; } .product-card-overlay { padding: 0.8rem 0.9rem 0.9rem; } }
 
-      .product-card { position: relative; border-radius: 20px; overflow: hidden; aspect-ratio: 3/4; min-height: 340px; cursor: pointer; box-shadow: 0 10px 26px rgba(30,50,40,0.10); transition: transform 0.18s ease, box-shadow 0.18s ease; background: linear-gradient(160deg, #EDF1E7, #F8F6EF); }
+      .product-card { position: relative; border-radius: 20px; overflow: hidden; aspect-ratio: 3/4; min-height: 340px; min-width: 0; width: 100%; box-sizing: border-box; cursor: pointer; box-shadow: 0 10px 26px rgba(30,50,40,0.10); transition: transform 0.18s ease, box-shadow 0.18s ease; background: linear-gradient(160deg, #EDF1E7, #F8F6EF); }
       .product-card:hover { transform: translateY(-5px); box-shadow: 0 22px 38px rgba(30,50,40,0.18); }
       .product-card-compact { min-width: 260px; }
       .product-card > .prod-visual { position: absolute; inset: 0; border-radius: 0; }
